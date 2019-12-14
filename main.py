@@ -97,3 +97,6 @@ polydata = ReadPolyData("assets/10680_Dog_v2.obj")
 generate_colored_polydata(polydata)
 
 render_poly_data(polydata)
+
+
+#bla bla
