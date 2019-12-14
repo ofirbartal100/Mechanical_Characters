@@ -14,13 +14,13 @@ class Alignment():
     represent a global 3d euler angles alignment
     '''
 
-    def __init(self, gamma,beta,alpha):
+    def __init(self, gamma, beta, alpha):
         self.gamma = gamma
         self.beta = beta
         self.alpha = alpha
 
 class Configuration():
-    def __init__(self,point,alignment):
+    def __init__(self, point, alignment):
         '''
         represents the configuration of a component.
         contains global position T=(x,y,z)
