@@ -32,3 +32,7 @@ class Configuration():
 
         self.point = point
         self.alignment = alignment
+
+    def rotate_alpha(self, d_alpha):
+        self.alignment.alpha = self.alignment.alpha + d_alpha
+

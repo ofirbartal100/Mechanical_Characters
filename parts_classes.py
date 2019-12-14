@@ -16,6 +16,12 @@ class Gear(Component):
         # return self.configuration.point + self.configuration.alignment.get_rotation_matrix() * local_joint_location
         pass
 
+    def get_alignment(self):
+        return self.configuration.alignment
+
+    def get_phase_func(self, other_gear: "Gear"):
+        return lambda a: -(self.radius / other_gear.radius) * a
+
 
 class Stick(Component):
     """
