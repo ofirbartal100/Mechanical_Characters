@@ -2,9 +2,9 @@ from abc import ABC
 
 
 class Component(ABC):
-    '''
+    """
     This class represents an abstract component object
-    '''
+    """
 
     def __init__(self,configuration):
         self.configuration = configuration

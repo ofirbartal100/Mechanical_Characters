@@ -1,4 +1,6 @@
 from component import *
+from configuration import *
+from component import *
 
 
 class Gear(Component):
