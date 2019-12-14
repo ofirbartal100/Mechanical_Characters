@@ -98,5 +98,3 @@ generate_colored_polydata(polydata)
 
 render_poly_data(polydata)
 
-
-#bla bla
