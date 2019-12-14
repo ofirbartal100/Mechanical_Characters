@@ -12,6 +12,10 @@ class Gear(Component):
         Component.__init__(self, configuration)
         self.radius = radius
 
+    def get_global_position(self, local_joint_location):
+        # return self.configuration.point + self.configuration.alignment.get_rotation_matrix() * local_joint_location
+        pass
+
 
 class Stick(Component):
     """
@@ -22,3 +26,5 @@ class Stick(Component):
         Component.__init__(self, configuration)
         self.length = length
 
+    def get_global_position(self, local_joint_location):
+        return self.configuration.point + self.configuration.alignment.get_rotation_matrix() * local_joint_location
