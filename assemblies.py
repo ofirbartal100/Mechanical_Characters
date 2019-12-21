@@ -1,12 +1,11 @@
 from parts_classes import *
 from connections import *
 
-##########
+
 class AssemblyA():
 
     def __init__(self, config):
         self.config = config
-
         self._parse_config(self.config)
 
     def _parse_config(self, config):
