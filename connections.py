@@ -2,6 +2,7 @@ from abc import ABC
 from abc import abstractmethod
 from component import *
 import numpy as np
+from typing import Union
 
 ########
 class Connection(ABC):
