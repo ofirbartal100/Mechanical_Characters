@@ -24,5 +24,5 @@ class PinConnection(Connection):
         self.rotation2 = rotation2
 
     def get_constraint(self):
-        self.comp1.get_global(self.joint1) - self.comp1.
+        #self.comp1.get_global(self.joint1) - self.comp1.
         self.comp1.get_global(self.joint1) - self.comp2.get_global(self.joint2)
