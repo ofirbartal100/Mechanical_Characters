@@ -41,16 +41,38 @@ class Connection(ABC):
         return joint_const
 
     @staticmethod
-    def free_params_in_assembly(const_list):
+    def join_constraints_prime(const_list):
         """
+        generates a master constraint that can be optimized via Newton Raphson
+        :param const_list:
+        :return:
+        """
+        free_params_amount = Connection.free_params_in_assembly(const_list)
+        def joint_const_prime(param_list):
+            """
+            :param param_list: list of parameters for each constraint
+            :return: sum of constraints parameterized with param_list
+            """
+            result = 0
+            slice_start = 0
+            for p, const in zip(free_params_amount, const_list):
+                result += const.get_constraint_prime()(*param_list[slice_start:slice_start+p])
+                slice_start += p
+            return result
 
-        :param const_list: list of constraints
-        :return: an array of free the amount of free parameters in each constraint in the assembly
-        """
-        param_amounts = []
-        for const in const_list:
-            param_amounts.append(const.get_free_param_count())
-        return np.array(param_amounts)
+        return joint_const_prime
+
+    # @staticmethod
+    # def free_params_in_assembly(const_list):
+    #     """
+    #
+    #     :param const_list: list of constraints
+    #     :return: an array of free the amount of free parameters in each constraint in the assembly
+    #     """
+    #     param_amounts = []
+    #     for const in const_list:
+    #         param_amounts.append(const.get_free_param_count())
+    #     return np.array(param_amounts)
 
 
 class PinConnection(Connection):
@@ -81,6 +103,12 @@ class PhaseConnection(Connection):
             return lambda alpha1: (alpha1 - self.actuator.get_alignment().alpha) ** 2
         else:
             return lambda alpha1, alpha2: (alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2))**2
+
+    # def get_constraint_prime(self):
+    #     if self.actuator is not None:
+    #         return lambda alpha1: 2*(alpha1 - self.actuator.get_alignment().alpha)
+    #     else:
+    #         return lambda alpha1, alpha2: 2*(alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2)) + 2*(alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2))*(-self.gear1.get_phase_func(self.gear2)(1))
 
     def get_free_param_count(self):
         if self.actuator is not None:
