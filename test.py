@@ -1,5 +1,6 @@
 from connections import *
 from parts_classes import *
+from configuration import *
 from scipy import optimize
 import numpy as np
 
@@ -14,6 +15,7 @@ actuator = Gear(actuator_conf, 0)
 gear1 = Gear(gear1_conf, 0.25)
 gear2 = Gear(gear2_conf, 0.5)
 gear3 = Gear(gear3_conf, 1)
+stick = Stick(gear3_conf, 1)
 
 # merge constraints to an assembly
 assembly = [PhaseConnection(actuator, gear1),

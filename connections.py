@@ -4,7 +4,7 @@ from component import *
 import numpy as np
 from typing import Union
 
-########
+
 class Connection(ABC):
     '''
     represent a pin connection
@@ -18,14 +18,17 @@ class Connection(ABC):
     def get_free_param_count(self):
         pass
 
+    def get_con_id(self):
+        pass
+
     @staticmethod
-    def join_constraints(const_list: Union[list, 'Connection']):
+    def join_constraints(connection_list: Union[list, 'Connection']):
         """
         generates a master constraint that can be optimized via Newton Raphson
-        :param const_list:
+        :param connection_list:
         :return:
         """
-        free_params_amount = Connection.free_params_in_assembly(const_list)
+        free_params_amount = Connection.free_params_in_assembly(connection_list)
         def joint_const(param_list):
             """
             :param param_list: list of parameters for each constraint
@@ -33,7 +36,7 @@ class Connection(ABC):
             """
             result = 0
             slice_start = 0
-            for p, const in zip(free_params_amount, const_list):
+            for p, const in zip(free_params_amount, connection_list):
                 result += const.get_constraint()(*param_list[slice_start:slice_start+p])
                 slice_start += p
             return result
@@ -41,14 +44,14 @@ class Connection(ABC):
         return joint_const
 
     @staticmethod
-    def free_params_in_assembly(const_list):
+    def free_params_in_assembly(connection_list):
         """
 
         :param const_list: list of constraints
         :return: an array of free the amount of free parameters in each constraint in the assembly
         """
         param_amounts = []
-        for const in const_list:
+        for const in connection_list:
             param_amounts.append(const.get_free_param_count())
         return np.array(param_amounts)
 
