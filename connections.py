@@ -1,14 +1,14 @@
 from abc import ABC
 from abc import abstractmethod
-from typing import Union
-import numpy as np
 from component import *
+import numpy as np
+from typing import Union
 
-
+########
 class Connection(ABC):
-    """
+    '''
     represent a pin connection
-    """
+    '''
 
     @abstractmethod
     def get_constraint(self):
@@ -41,43 +41,21 @@ class Connection(ABC):
         return joint_const
 
     @staticmethod
-    def join_constraints_prime(const_list):
+    def free_params_in_assembly(const_list):
         """
-        generates a master constraint that can be optimized via Newton Raphson
-        :param const_list:
-        :return:
+
+        :param const_list: list of constraints
+        :return: an array of free the amount of free parameters in each constraint in the assembly
         """
-        free_params_amount = Connection.free_params_in_assembly(const_list)
-        def joint_const_prime(param_list):
-            """
-            :param param_list: list of parameters for each constraint
-            :return: sum of constraints parameterized with param_list
-            """
-            result = 0
-            slice_start = 0
-            for p, const in zip(free_params_amount, const_list):
-                result += const.get_constraint_prime()(*param_list[slice_start:slice_start+p])
-                slice_start += p
-            return result
-
-        return joint_const_prime
-
-    # @staticmethod
-    # def free_params_in_assembly(const_list):
-    #     """
-    #
-    #     :param const_list: list of constraints
-    #     :return: an array of free the amount of free parameters in each constraint in the assembly
-    #     """
-    #     param_amounts = []
-    #     for const in const_list:
-    #         param_amounts.append(const.get_free_param_count())
-    #     return np.array(param_amounts)
+        param_amounts = []
+        for const in const_list:
+            param_amounts.append(const.get_free_param_count())
+        return np.array(param_amounts)
 
 
 class PinConnection(Connection):
 
-    def __init__(self, comp1, comp2, joint1, joint2, rotation1, rotation2):
+    def __init__(self, comp1, comp2, joint1, joint2,rotation1,rotation2):
         self.comp1 = comp1
         self.comp2 = comp2
         self.joint1 = joint1
@@ -86,8 +64,9 @@ class PinConnection(Connection):
         self.rotation2 = rotation2
 
     def get_constraint(self):
-        # self.comp1.get_global(self.joint1) - self.comp1.
+        #self.comp1.get_global(self.joint1) - self.comp1.
         self.comp1.get_global(self.joint1) - self.comp2.get_global(self.joint2)
+
 
 class PhaseConnection(Connection):
 
@@ -105,12 +84,6 @@ class PhaseConnection(Connection):
             return lambda alpha1: (alpha1 - self.actuator.get_alignment().alpha) ** 2
         else:
             return lambda alpha1, alpha2: (alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2))**2
-
-    # def get_constraint_prime(self):
-    #     if self.actuator is not None:
-    #         return lambda alpha1: 2*(alpha1 - self.actuator.get_alignment().alpha)
-    #     else:
-    #         return lambda alpha1, alpha2: 2*(alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2)) + 2*(alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2))*(-self.gear1.get_phase_func(self.gear2)(1))
 
     def get_free_param_count(self):
         if self.actuator is not None:
