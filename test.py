@@ -22,23 +22,23 @@ assembly = [PhaseConnection(actuator, gear1),
             PhaseConnection(gear2, gear3)]
 assembly_constraint, param_index = Connection.join_constraints(assembly)
 
-# assembly_constraint_prime = Connection.join_constraints_prime(assembly)
+assembly_constraint_prime, _ = Connection.join_constraints_prime(assembly)
 free_params = Connection.free_params_in_assembly(assembly)
 free_params_cnt = Connection.free_params_cnt_in_assembly(assembly)
 # move!
-actuator_conf.rotate_alpha(0.1)
+actuator_conf.rotate_alpha(0.001)
 
 # first_guess = np.random.random(free_params_cnt)
 first_guess = free_params
 first_guess = np.array([first_guess[k] for k in param_index])
 
 print(assembly_constraint(first_guess))
-# print(assembly_constraint_prime(np.array([])))
-sol = optimize.newton(assembly_constraint, x0=first_guess, maxiter=1000)
+print(assembly_constraint_prime(first_guess))
+sol = optimize.newton(assembly_constraint, fprime=assembly_constraint_prime, x0=first_guess, maxiter=1000)
 print(sol)
 
-# for i in range(1000):
-#     print(i)
-#     actuator_conf.rotate_alpha(0.00001)
-#     # print(assembly_constraint(sol), sol)
-#     sol = optimize.newton(assembly_constraint, sol, maxiter=1000)
+for i in range(1000):
+    print(i)
+    actuator_conf.rotate_alpha(0.001)
+    # print(assembly_constraint(sol), sol)
+    sol = optimize.newton(assembly_constraint, sol, maxiter=1000)

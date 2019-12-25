@@ -3,6 +3,7 @@ from abc import abstractmethod
 from component import *
 import numpy as np
 from typing import Union
+from collections import defaultdict
 
 
 class Connection(ABC):
@@ -52,6 +53,36 @@ class Connection(ABC):
             return result
 
         return joint_const, param_index
+
+    @staticmethod
+    #TODO: return a vector of the gradient per var
+    def join_constraints_prime(connection_list: Union[list, 'Connection']):
+        """
+        generates a master constraint that can be optimized via Newton Raphson
+        :param connection_list:
+        :return: the constrain describing the whole assemply
+                and the index (dict(param:position)) of the params
+        """
+        param_index = {p: i for i, p in enumerate(Connection.free_params_in_assembly(connection_list))}
+
+        def joint_const_prime(param_list):
+            """
+            :param param_list: list of parameters for each constraint
+                               must be ordered according to param_index
+            :return: sum of constraints parameterized with param_list
+            """
+            joint_grad_dict = defaultdict(lambda: 0)
+            for i, con in enumerate(connection_list):
+                gradient_dict = con.get_constraint_prime()(*[param_list[param_index[p]] for p in con.get_free_params()])
+                for k in gradient_dict:
+                    joint_grad_dict[k] += gradient_dict[k]
+            # order the result according to param_index
+            result = [0]*len(joint_grad_dict)
+            for k in joint_grad_dict:
+                result[param_index[k]] = joint_grad_dict[k]
+            return result
+
+        return joint_const_prime, param_index
 
     @staticmethod
     def free_params_in_assembly(connection_list):
@@ -126,3 +157,13 @@ class PhaseConnection(Connection):
                 return (alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2)) ** 2
 
             return const
+
+    def get_constraint_prime(self):
+        if self.actuator is not None:
+            # (alpha1 - self.actuator.get_alignment().alpha) ** 2
+            return lambda alpha1: {(self.gear1.id, 'alpha'): (alpha1 - self.actuator.get_alignment().alpha) * 2}
+        else:
+            # (alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2)) ** 2
+            return lambda alpha1, alpha2: {(self.gear1.id, 'alpha'): (alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2)) * 2,
+                                           (self.gear2.id, 'alpha'): ((alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2)) * 2) * - self.gear1.get_phase_func(self.gear2)(1)}
+
