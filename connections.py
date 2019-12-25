@@ -10,15 +10,24 @@ class Connection(ABC):
     represent a pin connection
     '''
 
+    id_counter = 0
+
+    def __init__(self):
+        self.params = {}
+        self.id = Connection.id_counter
+        Connection.id_counter += 1
+
+    def get_free_params(self):
+        return self.params
+
+    def get_free_params_cnt(self):
+        return len(self.params)
+
+    def get_id(self):
+        return self.id
+
     @abstractmethod
     def get_constraint(self):
-        pass
-
-    @abstractmethod
-    def get_free_param_count(self):
-        pass
-
-    def get_con_id(self):
         pass
 
     @staticmethod
@@ -26,39 +35,52 @@ class Connection(ABC):
         """
         generates a master constraint that can be optimized via Newton Raphson
         :param connection_list:
-        :return:
+        :return: the constrain describing the whole assemply
+                and the index (dict(param:position)) of the params
         """
-        free_params_amount = Connection.free_params_in_assembly(connection_list)
+        param_index = {p: i for i, p in enumerate(Connection.free_params_in_assembly(connection_list))}
+
         def joint_const(param_list):
             """
             :param param_list: list of parameters for each constraint
+                               must be ordered according to param_index
             :return: sum of constraints parameterized with param_list
             """
             result = 0
-            slice_start = 0
-            for p, const in zip(free_params_amount, connection_list):
-                result += const.get_constraint()(*param_list[slice_start:slice_start+p])
-                slice_start += p
+            for i, con in enumerate(connection_list):
+                result += con.get_constraint()(*[param_list[param_index[p]] for p in con.get_free_params()])
             return result
 
-        return joint_const
+        return joint_const, param_index
 
     @staticmethod
     def free_params_in_assembly(connection_list):
         """
 
-        :param const_list: list of constraints
-        :return: an array of free the amount of free parameters in each constraint in the assembly
+        :param connection_list: list of constraints
+        :return: a set containing tuples specifying the free params in the assembly
         """
-        param_amounts = []
+        params = {}
         for const in connection_list:
-            param_amounts.append(const.get_free_param_count())
-        return np.array(param_amounts)
+            params.update(const.get_free_params())
+        return params
+
+    @staticmethod
+    def free_params_cnt_in_assembly(connection_list):
+        """
+
+        :param connection_list: list of constraints
+        :return: a set containing tuples specifying the free params in the assembly
+        """
+        params = {}
+        for const in connection_list:
+            params.update(const.get_free_params())
+        return len(params)
 
 
 class PinConnection(Connection):
 
-    def __init__(self, comp1, comp2, joint1, joint2,rotation1,rotation2):
+    def __init__(self, comp1, comp2, joint1, joint2, rotation1, rotation2):
         self.comp1 = comp1
         self.comp2 = comp2
         self.joint1 = joint1
@@ -67,30 +89,40 @@ class PinConnection(Connection):
         self.rotation2 = rotation2
 
     def get_constraint(self):
-        #self.comp1.get_global(self.joint1) - self.comp1.
+        # self.comp1.get_global(self.joint1) - self.comp1.
         self.comp1.get_global(self.joint1) - self.comp2.get_global(self.joint2)
 
 
 class PhaseConnection(Connection):
 
     def __init__(self, gear1, gear2):
+        Connection.__init__(self)
         self.gear1 = gear1
         self.gear2 = gear2
         self.actuator = None
         if self.gear1.radius == 0:
             self.actuator = self.gear1
+            self.gear1 = self.gear2
         elif self.gear2.radius == 0:
             self.actuator = self.gear2
+        # add the free parameters
+        if self.actuator is not None:
+            self.params[(self.gear1.id, 'alpha')] = 0
+        else:
+            self.params[(self.gear1.id, 'alpha')] = 0
+            self.params[(self.gear2.id, 'alpha')] = 0
 
     def get_constraint(self):
         if self.actuator is not None:
-            return lambda alpha1: (alpha1 - self.actuator.get_alignment().alpha) ** 2
-        else:
-            return lambda alpha1, alpha2: (alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2))**2
+            def const(alpha1):
+                self.params[(self.gear1.id, 'alpha')] = alpha1
+                return (alpha1 - self.actuator.get_alignment().alpha) ** 2
 
-    def get_free_param_count(self):
-        if self.actuator is not None:
-            return 1
+            return const
         else:
-            return 2
+            def const(alpha1, alpha2):
+                self.params[(self.gear1.id, 'alpha')] = alpha1
+                self.params[(self.gear2.id, 'alpha')] = alpha2
+                return (alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2)) ** 2
 
+            return const

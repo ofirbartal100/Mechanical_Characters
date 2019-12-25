@@ -11,10 +11,10 @@ class Component(ABC):
 
     def __init__(self, configuration):
         self.configuration = configuration
-        self.id = Component.get_id()
+        self.id = Component.generate_id()
 
     @staticmethod
-    def get_id():
+    def generate_id():
         new_id = Component.id_counter
         Component.id_counter += 1
         return new_id
