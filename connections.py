@@ -51,6 +51,7 @@ class Connection(ABC):
             for i, con in enumerate(connection_list):
                 result += con.get_constraint()(*[param_list[param_index[p]] for p in con.get_free_params()])
             return result
+            # return [result]*Connection.free_params_cnt_in_assembly(connection_list)
 
         return joint_const, param_index
 

@@ -2,6 +2,7 @@ from connections import *
 from parts_classes import *
 from configuration import *
 from scipy import optimize
+import scipy
 import numpy as np
 
 actuator_conf = Configuration(Point(0, 0, 0), Alignment(0, 0, 0))
@@ -32,13 +33,22 @@ actuator_conf.rotate_alpha(0.001)
 first_guess = free_params
 first_guess = np.array([first_guess[k] for k in param_index])
 
-print(assembly_constraint(first_guess))
-print(assembly_constraint_prime(first_guess))
-sol = optimize.newton(assembly_constraint, fprime=assembly_constraint_prime, x0=first_guess, maxiter=1000)
-print(sol)
+
+def update_state(x0, func, dfunc):
+    x = np.array(x0)
+    for n in range(100):  # do at most 100 iterations
+        f = func(x)
+        df = np.array(dfunc(x))
+
+        if abs(f) < 1e-6:  # exit function if we're close enough
+            break
+
+        x = x - df * f / scipy.linalg.norm(df) ** 2  # update guess
+    return x
 
 for i in range(1000):
-    print(i)
     actuator_conf.rotate_alpha(0.001)
+    sol = update_state(first_guess, assembly_constraint, assembly_constraint_prime)
+    print(sol)
     # print(assembly_constraint(sol), sol)
-    sol = optimize.newton(assembly_constraint, sol, maxiter=1000)
+    # sol = optimize.newton(assembly_constraint, sol, maxiter=1000)
