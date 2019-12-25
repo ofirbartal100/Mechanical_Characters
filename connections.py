@@ -1,15 +1,13 @@
-from abc import ABC
-from abc import abstractmethod
-from component import *
-import numpy as np
-from typing import Union
 from collections import defaultdict
+from typing import Union
+
+from component import *
 
 
 class Connection(ABC):
-    '''
+    """
     represent a pin connection
-    '''
+    """
 
     id_counter = 0
 
@@ -30,83 +28,6 @@ class Connection(ABC):
     @abstractmethod
     def get_constraint(self):
         pass
-
-    @staticmethod
-    def join_constraints(connection_list: Union[list, 'Connection']):
-        """
-        generates a master constraint that can be optimized via Newton Raphson
-        :param connection_list:
-        :return: the constrain describing the whole assemply
-                and the index (dict(param:position)) of the params
-        """
-        param_index = {p: i for i, p in enumerate(Connection.free_params_in_assembly(connection_list))}
-
-        def joint_const(param_list):
-            """
-            :param param_list: list of parameters for each constraint
-                               must be ordered according to param_index
-            :return: sum of constraints parameterized with param_list
-            """
-            result = 0
-            for i, con in enumerate(connection_list):
-                result += con.get_constraint()(*[param_list[param_index[p]] for p in con.get_free_params()])
-            return result
-            # return [result]*Connection.free_params_cnt_in_assembly(connection_list)
-
-        return joint_const, param_index
-
-    @staticmethod
-    def join_constraints_prime(connection_list: Union[list, 'Connection']):
-        """
-        generates a master constraint that can be optimized via Newton Raphson
-        :param connection_list:
-        :return: the constrain describing the whole assemply
-                and the index (dict(param:position)) of the params
-        """
-        param_index = {p: i for i, p in enumerate(Connection.free_params_in_assembly(connection_list))}
-
-        def joint_const_prime(param_list):
-            """
-            :param param_list: list of parameters for each constraint
-                               must be ordered according to param_index
-            :return: sum of constraints parameterized with param_list
-            """
-            joint_grad_dict = defaultdict(lambda: 0)
-            for i, con in enumerate(connection_list):
-                gradient_dict = con.get_constraint_prime()(*[param_list[param_index[p]] for p in con.get_free_params()])
-                for k in gradient_dict:
-                    joint_grad_dict[k] += gradient_dict[k]
-            # order the result according to param_index
-            result = [0]*len(joint_grad_dict)
-            for k in joint_grad_dict:
-                result[param_index[k]] = joint_grad_dict[k]
-            return result
-
-        return joint_const_prime, param_index
-
-    @staticmethod
-    def free_params_in_assembly(connection_list):
-        """
-
-        :param connection_list: list of constraints
-        :return: a set containing tuples specifying the free params in the assembly
-        """
-        params = {}
-        for const in connection_list:
-            params.update(const.get_free_params())
-        return params
-
-    @staticmethod
-    def free_params_cnt_in_assembly(connection_list):
-        """
-
-        :param connection_list: list of constraints
-        :return: a set containing tuples specifying the free params in the assembly
-        """
-        params = {}
-        for const in connection_list:
-            params.update(const.get_free_params())
-        return len(params)
 
 
 class PinConnection(Connection):
@@ -164,6 +85,7 @@ class PhaseConnection(Connection):
             return lambda alpha1: {(self.gear1.id, 'alpha'): (alpha1 - self.actuator.get_alignment().alpha) * 2}
         else:
             # (alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2)) ** 2
-            return lambda alpha1, alpha2: {(self.gear1.id, 'alpha'): (alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2)) * 2,
-                                           (self.gear2.id, 'alpha'): ((alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2)) * 2) * - self.gear1.get_phase_func(self.gear2)(1)}
-
+            return lambda alpha1, alpha2: {
+                (self.gear1.id, 'alpha'): (alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2)) * 2,
+                (self.gear2.id, 'alpha'): ((alpha1 - self.gear1.get_phase_func(self.gear2)(
+                    alpha2)) * 2) * - self.gear1.get_phase_func(self.gear2)(1)}

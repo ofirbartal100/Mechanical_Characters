@@ -1,8 +1,10 @@
 from parts import *
 from connections import *
+import numpy as np
 
 
 class Assembly:
+    id_counter = 0
 
     def __init__(self, connection_list, newt_iters=100, newt_tolerance=1e-6):
         self.con_list = connection_list
@@ -13,6 +15,8 @@ class Assembly:
         self.cur_state = self.free_params_in_assembly()
         # make sure the assembly is valid
         self.update_state()
+        self.id = Assembly.id_counter
+        Assembly.id_counter += 1
 
     def get_assembly_constraint(self):
         """
@@ -21,7 +25,7 @@ class Assembly:
         :return: the constrain describing the whole assemply
                 and the index (dict(param:position)) of the params
         """
-        param_index = {p: i for i, p in enumerate(Connection.free_params_in_assembly(self.con_list))}
+        param_index = {p: i for i, p in enumerate(self.free_params_in_assembly())}
 
         def assembly_const(param_list):
             """
@@ -33,7 +37,6 @@ class Assembly:
             for i, con in enumerate(self.con_list):
                 result += con.get_constraint()(*[param_list[param_index[p]] for p in con.get_free_params()])
             return result
-            # return [result]*Connection.free_params_cnt_in_assembly(connection_list)
 
         return assembly_const, param_index
 
@@ -105,7 +108,7 @@ class Assembly:
         if converged:
             self.update_cur_state_from_array(x)
         else:
-            raise(RuntimeError('failed to update state, illegal assembly or not enough iterations'))
+            raise (RuntimeError('failed to update state, illegal assembly or not enough iterations'))
 
     def update_cur_state_from_array(self, new_state_array):
         for param, idx in self.param_index.items():
@@ -122,7 +125,7 @@ class AssemblyA:
         self._parse_config(self.config)
 
     def _parse_config(self, config):
-        self.components = [Gear(), Stick(),Gear(), Stick()]
+        self.components = [Gear(), Stick(), Gear(), Stick()]
         self.connections = [PinConnection(self.components[0], self.components[1], 0.5, (0, 0)),
                             PinConnection(self.components[2], self.components[3], 0.5, (0, 0)),
                             PinConnection(self.components[1], self.components[3], (1, 1), (0.5, 0.5))]

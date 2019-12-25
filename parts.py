@@ -40,8 +40,8 @@ class Stick(Component):
     the stick starts at the origin and it's direction is parallel to the local X axis
     """
 
-    def __init__(self, configuration, length):
-        Component.__init__(self, configuration)
+    def __init__(self, edge, orientation, length):
+        Component.__init__(self, edge, orientation)
         self.length = length
 
     def get_global_position(self, local_joint_location):
