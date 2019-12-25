@@ -1,5 +1,6 @@
 from abc import ABC
 from abc import abstractmethod
+from configuration import Configuration
 
 
 class Component(ABC):
@@ -9,8 +10,8 @@ class Component(ABC):
 
     id_counter = 0
 
-    def __init__(self, configuration):
-        self.configuration = configuration
+    def __init__(self, point, alignment):
+        self.configuration = Configuration(point, alignment)
         self.id = Component.generate_id()
 
     @staticmethod

@@ -1,5 +1,3 @@
-
-
 class Point():
     """
     represent a 3d point in space
@@ -34,5 +32,19 @@ class Configuration():
         self.alignment = alignment
 
     def rotate_alpha(self, d_alpha):
-        self.alignment.alpha = (self.alignment.alpha + d_alpha)
+        self.alignment.alpha += d_alpha
 
+    def rotate_beta(self, d_beta):
+        self.alignment.alpha += d_beta
+
+    def rotate_gamma(self, d_gamma):
+        self.alignment.alpha += d_gamma
+
+    def move_x(self, d_x):
+        self.point.x += d_x
+
+    def move_y(self, d_y):
+        self.point.y += d_y
+
+    def move_z(self, d_z):
+        self.point.z += d_z

@@ -56,7 +56,6 @@ class Connection(ABC):
         return joint_const, param_index
 
     @staticmethod
-    #TODO: return a vector of the gradient per var
     def join_constraints_prime(connection_list: Union[list, 'Connection']):
         """
         generates a master constraint that can be optimized via Newton Raphson
