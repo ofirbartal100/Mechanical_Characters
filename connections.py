@@ -1,7 +1,8 @@
-from collections import defaultdict
-from typing import Union
+from abc import ABC, abstractmethod
+import numpy as np
 
 from component import *
+from configuration import *
 
 
 class Connection(ABC):
@@ -32,17 +33,130 @@ class Connection(ABC):
 
 class PinConnection(Connection):
 
-    def __init__(self, comp1, comp2, joint1, joint2, rotation1, rotation2):
+    def __init__(self, comp1, comp2, joint1, joint2, rotation_axis1=np.array([90, 90, 0]),
+                 rotation_axis2=np.array([90, 90, 0])):
+        """
+
+        :param comp1: component 1 involved in the pin connection
+        :param comp2: component 1 involved in the pin connection
+        :param joint1: a vector: np array of shape (3,)
+                       specifies the joint location in local coordinates for comp1
+                       this is also the orientation as the origin is an edge
+        :param joint2: a vector: np array of shape (3,)
+                       specifies the joint location in local coordinates for comp2
+                       this is also the orientation as the origin is an edge
+        :param rotation_axis1: an Alignment object
+                               rotation axis of the pin (imagined as the vector describing the pin)
+                               in local coordinates
+        :param rotation_axis2: an Alignment object
+                               rotation axis of the pin (imagined as the vector describing the pin)
+                               in local coordinates
+        """
+        Connection.__init__(self)
+
         self.comp1 = comp1
         self.comp2 = comp2
         self.joint1 = joint1
         self.joint2 = joint2
-        self.rotation1 = rotation1
-        self.rotation2 = rotation2
+        self.rotation_axis1 = rotation_axis1
+        self.rotation_axis2 = rotation_axis2
+
+        if isinstance(joint1, Point):
+            self.joint1 = joint1.vector()
+        if isinstance(joint2, Point):
+            self.joint2 = joint2.vector()
+        if isinstance(rotation_axis1, Alignment):
+            self.rotation_axis1 = rotation_axis1.vector()
+        if isinstance(rotation_axis2, Alignment):
+            self.rotation_axis2 = rotation_axis2.vector()
+
+        self.params[(self.comp1.id, 'x')] = 0
+        self.params[(self.comp1.id, 'y')] = 0
+        self.params[(self.comp1.id, 'z')] = 0
+        self.params[(self.comp1.id, 'alpha')] = 0
+        self.params[(self.comp2.id, 'x')] = 0
+        self.params[(self.comp2.id, 'y')] = 0
+        self.params[(self.comp2.id, 'z')] = 0
+        self.params[(self.comp2.id, 'alpha')] = 0
 
     def get_constraint(self):
-        # self.comp1.get_global(self.joint1) - self.comp1.
-        self.comp1.get_global(self.joint1) - self.comp2.get_global(self.joint2)
+        def const(position1x, position1y, position1z,
+                  position2x, position2y, position2z,
+                  alpha1, alpha2):
+            # update the positions of components
+            self.params[(self.comp1.id, 'x')] = position1x
+            self.params[(self.comp1.id, 'y')] = position1y
+            self.params[(self.comp1.id, 'z')] = position1z
+            self.params[(self.comp1.id, 'alpha')] = alpha1
+            self.params[(self.comp2.id, 'x')] = position2x
+            self.params[(self.comp2.id, 'y')] = position2y
+            self.params[(self.comp2.id, 'z')] = position2z
+            self.params[(self.comp2.id, 'alpha')] = alpha2
+            # update the connection parts with the new values
+            self.comp1.set_alpha(alpha1)
+            self.comp2.set_alpha(alpha2)
+            self.comp1.translate(Point(position1x, position1y, position1z))
+            self.comp2.translate(Point(position2x, position2y, position2z, ))
+            # calculate constraint values
+            new_joint_global_location1 = self.comp1.local_vector_to_global(self.joint1)
+            new_joint_global_location2 = self.comp2.local_vector_to_global(self.joint2)
+            new_rotation_axis1_orientation = self.comp1.get_global_orientation(self.rotation_axis1)
+            new_rotation_axis2_orientation = self.comp2.get_global_orientation(self.rotation_axis2)
+            joint_dist_const = (new_joint_global_location1 - new_joint_global_location2) ** 2
+            rotation_axis_const = (new_rotation_axis1_orientation - new_rotation_axis2_orientation) ** 2
+            return sum(joint_dist_const + rotation_axis_const)
+
+        return const
+
+    def get_constraint_prime(self):
+        def const_prime(x1, y1, z1,
+                        x2, y2, z2,
+                        alpha1, alpha2):
+            from numpy import cos, sin
+            # rotation result on 3 axes
+            # p + [x*(cos_b*cos_a) + y*(sin_g*sin_b*cos_a - cos_g*sin_a) + z*(sin_g*sin_a + cos_g*sin_b*cos_a),
+            #      x*(cos_b*cos_a) + y*(sin_g*sin_b*sin_a + cos_g*cos_a) + z(-sin_g*cos_a + cos_g*sin_b*sin_a),
+            #      x*(-sin_b) + y*(sin_g*cos_b) + z*(cos_g*cos_b)]
+            # using only alpha
+            # p + [x*cos_a - y*sin_a,
+            #      x*sin_a + y*cos_a,
+            #      z]
+            # the actual constraint is (p1+v1 - (p2+v2))^2:
+            # x: (x1 + (x*cos_a1 -y*sin_a1) - (x2 +(x*cos_a2 -y*sin_a2)))^2
+            # y: (y1 + (x*sin_a + y*cos_a) - (y2 +(x*sin_a + y*cos_a)))^2
+            # z: (z1 + z - (z2 +z))^2
+            a1_rad = np.deg2rad(alpha1)
+            a2_rad = np.deg2rad(alpha2)
+            # derivatives for line: new_joint_global_location1 = self.comp1.local_vector_to_global(self.joint1)
+
+            new_joint_global_location1 = self.comp1.local_vector_to_global(self.joint1)
+            der_x1 = 2 * new_joint_global_location1[0] * (1 + cos(a1_rad) + sin(a1_rad))
+            der_y1 = 2 * new_joint_global_location1[0] * (1 - sin(a1_rad) + cos(a1_rad))
+            der_z1 = 2 * new_joint_global_location1[0] * 1
+            # TODO: correct this to the squared constant
+            der_a1 = -x1 * sin(a1_rad) - y1 * cos(a1_rad) + x1 * cos(a1_rad) - y1 * sin(a1_rad)
+            der_alpha1 = np.pi * der_a1 / 180
+            # derivatives for line: new_joint_global_location1 = self.comp1.local_vector_to_global(self.joint1)
+            new_joint_global_location2 = self.comp2.local_vector_to_global(self.joint2)
+            der_x2 = 2 * new_joint_global_location2[0] * (1 + cos(a2_rad) + sin(a2_rad))
+            der_y2 = 2 * new_joint_global_location2[0] * (1 - sin(a2_rad) + cos(a2_rad))
+            der_z2 = 2 * new_joint_global_location2[0] * 1
+            der_a2 = -x2 * sin(a2_rad) - y2 * cos(a2_rad) + x2 * cos(a2_rad) - y2 * sin(a2_rad)
+            der_alpha2 = np.pi * der_a2 / 180
+            # new_rotation_axis1_orientation = self.comp1.get_global_orientation(self.rotation_axis1)
+            # new_rotation_axis2_orientation = self.comp2.get_global_orientation(self.rotation_axis2)
+            # assuming 2d then the orientation is constant (always Z)
+            # therefore it doesn't change the derivative
+            return {(self.comp1.id, 'x'): der_x1,
+                    (self.comp1.id, 'y'): der_y1,
+                    (self.comp1.id, 'z'): der_z1,
+                    (self.comp1.id, 'alpha'): der_alpha1,
+                    (self.comp2.id, 'x'): der_x2,
+                    (self.comp2.id, 'y'): der_y2,
+                    (self.comp2.id, 'z'): der_z2,
+                    (self.comp2.id, 'alpha'): der_alpha2}
+
+        return const_prime
 
 
 class PhaseConnection(Connection):
@@ -68,6 +182,7 @@ class PhaseConnection(Connection):
         if self.actuator is not None:
             def const(alpha1):
                 self.params[(self.gear1.id, 'alpha')] = alpha1
+                self.gear1.rotate(Alignment(0, 0, alpha1))
                 return (alpha1 - self.actuator.get_alignment().alpha) ** 2
 
             return const
@@ -75,6 +190,8 @@ class PhaseConnection(Connection):
             def const(alpha1, alpha2):
                 self.params[(self.gear1.id, 'alpha')] = alpha1
                 self.params[(self.gear2.id, 'alpha')] = alpha2
+                self.gear1.set_alpha(alpha1)
+                self.gear2.set_alpha(alpha2)
                 return (alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2)) ** 2
 
             return const
@@ -89,3 +206,75 @@ class PhaseConnection(Connection):
                 (self.gear1.id, 'alpha'): (alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2)) * 2,
                 (self.gear2.id, 'alpha'): ((alpha1 - self.gear1.get_phase_func(self.gear2)(
                     alpha2)) * 2) * - self.gear1.get_phase_func(self.gear2)(1)}
+
+
+class FixedConnection(Connection):
+
+    def __init__(self, comp, fixed_position, fixed_orientation):
+        """
+
+        :param comp: component to fix
+        :param position:
+        :param orientation: Alignment object
+                            alpha can be None, in that case the alpha remains free
+        """
+        Connection.__init__(self)
+
+        self.comp = comp
+        self.fixed_position = fixed_position
+        self.fixed_orientation = fixed_orientation
+        self.fix_alpha = fixed_orientation.alpha is not None
+
+        self.params[(self.comp.id, 'x')] = 0
+        self.params[(self.comp.id, 'y')] = 0
+        self.params[(self.comp.id, 'z')] = 0
+        self.params[(self.comp.id, 'beta')] = 0
+        self.params[(self.comp.id, 'gamma')] = 0
+        if self.fix_alpha:
+            self.params[(self.comp.id, 'alpha')] = 0
+
+    def get_constraint(self):
+        def const(positionx, positiony, positionz,
+                  gamma, beta, alpha=None):
+            # update the positions of components
+            self.params[(self.comp.id, 'x')] = positionx
+            self.params[(self.comp.id, 'y')] = positiony
+            self.params[(self.comp.id, 'z')] = positionz
+            self.params[(self.comp.id, 'beta')] = 0
+            self.params[(self.comp.id, 'gamma')] = 0
+            if self.fix_alpha:
+                self.params[(self.comp.id, 'alpha')] = alpha
+            # update the connection parts with the new values
+            self.comp.translate(Point(positionx, positiony, positionz))
+            self.comp.set_gamma(gamma)
+            self.comp.set_beta(beta)
+            if self.fix_alpha:
+                self.comp.set_alpha(alpha)
+
+            # calculate constraint values
+            res = 0
+            # position constraint
+            res += ((np.array([positionx, positiony, positionz]) - self.fixed_position.vector()) ** 2).sum()
+            # angle constraints
+            res += (gamma - self.fixed_orientation.gamma) ** 2
+            res += (beta - self.fixed_orientation.beta) ** 2
+            if self.fix_alpha:
+                res += (alpha - self.fixed_orientation.alpha) ** 2
+            return res
+
+        return const
+
+    def get_constraint_prime(self):
+        def const_prime(positionx, positiony, positionz,
+                        gamma, beta, alpha=None):
+            der_pos = 2 * (np.array([positionx, positiony, positionz]) - self.fixed_position.vector())
+            der_dict = {(self.comp.id, 'x'): der_pos[0],
+                        (self.comp.id, 'y'): der_pos[1],
+                        (self.comp.id, 'z'): der_pos[2],
+                        (self.comp.id, 'gamma'): 2 * (gamma - self.fixed_orientation.gamma),
+                        (self.comp.id, 'beta'): 2 * (beta - self.fixed_orientation.beta)}
+            if self.fix_alpha:
+                der_dict[(self.comp.id, 'alpha')] = 2 * (alpha - self.fixed_orientation.alpha),
+            return der_dict
+
+        return const_prime

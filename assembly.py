@@ -1,6 +1,7 @@
 from parts import *
 from connections import *
 import numpy as np
+from collections import defaultdict
 
 
 class Assembly:

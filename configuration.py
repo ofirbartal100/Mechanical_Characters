@@ -1,4 +1,8 @@
-class Point():
+import numpy as np
+from scipy.spatial.transform import Rotation
+
+
+class Point:
     """
     represent a 3d point in space
     """
@@ -8,10 +12,17 @@ class Point():
         self.y = y
         self.z = z
 
+    def vector(self):
+        return np.array([self.x, self.y, self.z])
 
-class Alignment():
+
+class Alignment:
     """
-    represent a global 3d euler angles alignment
+    represent a global 3d euler angles in degrees alignment
+    the angles correspond to rotation axes in the following way:
+    gamma: x
+    beta: y
+    alpha: z
     """
 
     def __init__(self, gamma, beta, alpha):
@@ -19,16 +30,23 @@ class Alignment():
         self.beta = beta
         self.alpha = alpha
 
+    def vector(self):
+        return np.array([self.gamma, self.beta, self.alpha])
 
-class Configuration():
-    def __init__(self, point, alignment):
+    def get_rotation_obj(self):
+        print(Rotation.from_euler('xyz', self.vector() * 360, degrees=True).apply([1, 1, 1]))
+        return Rotation.from_euler('xyz', self.vector() * 360, degrees=True)
+
+
+class Configuration:
+    def __init__(self, position, alignment):
         """
         represents the configuration of a component.
         contains global position T=(x,y,z)
         contains global rotation Euler=(gamma,beta,alpha)
         """
 
-        self.point = point
+        self.position = position
         self.alignment = alignment
 
     def rotate_alpha(self, d_alpha):
@@ -41,10 +59,10 @@ class Configuration():
         self.alignment.alpha += d_gamma
 
     def move_x(self, d_x):
-        self.point.x += d_x
+        self.position.x += d_x
 
     def move_y(self, d_y):
-        self.point.y += d_y
+        self.position.y += d_y
 
     def move_z(self, d_z):
-        self.point.z += d_z
+        self.position.z += d_z
