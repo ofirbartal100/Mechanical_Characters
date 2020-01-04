@@ -14,7 +14,9 @@ assembly = Assembly([PhaseConnection(actuator, gear1),
                      PhaseConnection(gear1, gear2),
                      PhaseConnection(gear2, gear3)])
 # move!
-for i in range(1000):
-    actuator.turn(0.001)
+for i in range(360):
+    actuator.turn(1)
     assembly.update_state()
     print(assembly.cur_state)
+
+print(gear1.configuration.alignment.alpha)
