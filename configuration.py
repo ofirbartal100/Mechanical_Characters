@@ -35,10 +35,10 @@ class Configuration():
         self.alignment.alpha += d_alpha
 
     def rotate_beta(self, d_beta):
-        self.alignment.alpha += d_beta
+        self.alignment.beta += d_beta
 
     def rotate_gamma(self, d_gamma):
-        self.alignment.alpha += d_gamma
+        self.alignment.gamma += d_gamma
 
     def move_x(self, d_x):
         self.point.x += d_x
@@ -48,3 +48,5 @@ class Configuration():
 
     def move_z(self, d_z):
         self.point.z += d_z
+
+

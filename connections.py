@@ -8,7 +8,6 @@ class Connection(ABC):
     """
     represent a pin connection
     """
-
     id_counter = 0
 
     def __init__(self):
@@ -89,3 +88,4 @@ class PhaseConnection(Connection):
                 (self.gear1.id, 'alpha'): (alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2)) * 2,
                 (self.gear2.id, 'alpha'): ((alpha1 - self.gear1.get_phase_func(self.gear2)(
                     alpha2)) * 2) * - self.gear1.get_phase_func(self.gear2)(1)}
+
