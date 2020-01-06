@@ -26,15 +26,15 @@ class Alignment:
     """
 
     def __init__(self, gamma, beta, alpha):
-        self.gamma = gamma
-        self.beta = beta
-        self.alpha = alpha
+        self.gamma = np.deg2rad(gamma) if gamma is not None else None
+        self.beta = np.deg2rad(beta) if beta is not None else None
+        self.alpha = np.deg2rad(alpha) if alpha is not None else None
 
     def vector(self):
         return np.array([self.gamma, self.beta, self.alpha])
 
     def get_rotation_obj(self):
-        return Rotation.from_euler('xyz', self.vector(), degrees=True)
+        return Rotation.from_euler('xyz', self.vector(), degrees=False)
 
 
 class Configuration:
@@ -49,13 +49,13 @@ class Configuration:
         self.alignment = alignment
 
     def rotate_alpha(self, d_alpha):
-        self.alignment.alpha += d_alpha
+        self.alignment.alpha += np.deg2rad(d_alpha)
 
     def rotate_beta(self, d_beta):
-        self.alignment.alpha += d_beta
+        self.alignment.alpha += np.deg2rad(d_beta)
 
     def rotate_gamma(self, d_gamma):
-        self.alignment.alpha += d_gamma
+        self.alignment.alpha += np.deg2rad(d_gamma)
 
     def move_x(self, d_x):
         self.position.x += d_x

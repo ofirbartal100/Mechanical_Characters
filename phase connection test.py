@@ -5,9 +5,9 @@ from assembly import Assembly
 
 # generate gears
 actuator = Actuator()
-gear1 = Gear(radius=1, center=Point(0, 0, 0), alignment=Alignment(0, 0, 0))
-gear2 = Gear(radius=0.5, center=Point(0, 0, 0), alignment=Alignment(0, 0, 0))
-gear3 = Gear(radius=0.25, center=Point(0, 0, 0), alignment=Alignment(0, 0, 0))
+gear1 = Gear(radius=1, center=Point(0, 0, 0), orientation=Alignment(0, 0, 0))
+gear2 = Gear(radius=0.5, center=Point(0, 0, 0), orientation=Alignment(0, 0, 0))
+gear3 = Gear(radius=0.25, center=Point(0, 0, 0), orientation=Alignment(0, 0, 0))
 
 # merge constraints to an assembly
 assembly = Assembly([PhaseConnection(actuator, gear1),

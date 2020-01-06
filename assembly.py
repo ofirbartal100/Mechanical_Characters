@@ -7,7 +7,7 @@ from collections import defaultdict
 class Assembly:
     id_counter = 0
 
-    def __init__(self, connection_list, newt_iters=100, newt_tolerance=1e-6):
+    def __init__(self, connection_list, newt_iters=1000, newt_tolerance=1e-6):
         self.con_list = connection_list
         self.iterations = newt_iters
         self.tolerance = newt_tolerance
