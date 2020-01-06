@@ -30,6 +30,7 @@ class Connection(ABC):
     def get_constraint(self):
         pass
 
+#TODO: change all contraints to retrurn a dict of resutls per variable
 
 class PinConnection(Connection):
 
@@ -60,6 +61,7 @@ class PinConnection(Connection):
         self.joint2 = joint2
         self.rotation_axis1 = rotation_axis1
         self.rotation_axis2 = rotation_axis2
+        self.derivs = None
 
         if isinstance(joint1, Point):
             self.joint1 = joint1.vector()
@@ -70,6 +72,7 @@ class PinConnection(Connection):
         if isinstance(rotation_axis2, Alignment):
             self.rotation_axis2 = rotation_axis2.vector()
 
+        # the order params are inserted must be same as order in const and cost_prime
         self.params[(self.comp1.id, 'x')] = 0
         self.params[(self.comp1.id, 'y')] = 0
         self.params[(self.comp1.id, 'z')] = 0
@@ -80,9 +83,8 @@ class PinConnection(Connection):
         self.params[(self.comp2.id, 'alpha')] = 0
 
     def get_constraint(self):
-        def const(position1x, position1y, position1z,
-                  position2x, position2y, position2z,
-                  alpha1, alpha2):
+        def const(position1x, position1y, position1z, alpha1,
+                  position2x, position2y, position2z, alpha2):
             # update the positions of components
             self.params[(self.comp1.id, 'x')] = position1x
             self.params[(self.comp1.id, 'y')] = position1y
@@ -96,7 +98,7 @@ class PinConnection(Connection):
             self.comp1.set_alpha(alpha1)
             self.comp2.set_alpha(alpha2)
             self.comp1.translate(Point(position1x, position1y, position1z))
-            self.comp2.translate(Point(position2x, position2y, position2z, ))
+            self.comp2.translate(Point(position2x, position2y, position2z))
             # calculate constraint values
             new_joint_global_location1 = self.comp1.local_vector_to_global(self.joint1)
             new_joint_global_location2 = self.comp2.local_vector_to_global(self.joint2)
@@ -104,14 +106,14 @@ class PinConnection(Connection):
             new_rotation_axis2_orientation = self.comp2.get_global_orientation(self.rotation_axis2)
             joint_dist_const = (new_joint_global_location1 - new_joint_global_location2) ** 2
             rotation_axis_const = (new_rotation_axis1_orientation - new_rotation_axis2_orientation) ** 2
+
             return sum(joint_dist_const + rotation_axis_const)
 
         return const
 
     def get_constraint_prime(self):
-        def const_prime(x1, y1, z1,
-                        x2, y2, z2,
-                        alpha1, alpha2):
+        def const_prime(x1, y1, z1, alpha1,
+                        x2, y2, z2, alpha2):
             from numpy import cos, sin
             # rotation result on 3 axes
             # p + [x*(cos_b*cos_a) + y*(sin_g*sin_b*cos_a - cos_g*sin_a) + z*(sin_g*sin_a + cos_g*sin_b*cos_a),
@@ -122,26 +124,31 @@ class PinConnection(Connection):
             #      x*sin_a + y*cos_a,
             #      z]
             # the actual constraint is (p1+v1 - (p2+v2))^2:
-            # x: (x1 + (x*cos_a1 -y*sin_a1) - (x2 +(x*cos_a2 -y*sin_a2)))^2
-            # y: (y1 + (x*sin_a + y*cos_a) - (y2 +(x*sin_a + y*cos_a)))^2
-            # z: (z1 + z - (z2 +z))^2
+            # x: (x1 + (x_j*cos_a1 -y_j*sin_a1) - (x2 +(x_j*cos_a2 -y_j*sin_a2)))^2
+            # y: (y1 + (x_j*sin_a1 + y_j*cos_a1) - (y2 +(x_j*sin_a + y_j*cos_a)))^2
+            # z: (z1 + z_j - (z2 +z_j))^2
             a1_rad = np.deg2rad(alpha1)
             a2_rad = np.deg2rad(alpha2)
             # derivatives for line: new_joint_global_location1 = self.comp1.local_vector_to_global(self.joint1)
 
             new_joint_global_location1 = self.comp1.local_vector_to_global(self.joint1)
-            der_x1 = 2 * new_joint_global_location1[0] * (1 + cos(a1_rad) + sin(a1_rad))
-            der_y1 = 2 * new_joint_global_location1[0] * (1 - sin(a1_rad) + cos(a1_rad))
-            der_z1 = 2 * new_joint_global_location1[0] * 1
-            # TODO: correct this to the squared constant
-            der_a1 = -x1 * sin(a1_rad) - y1 * cos(a1_rad) + x1 * cos(a1_rad) - y1 * sin(a1_rad)
+            new_joint_global_location2 = self.comp2.local_vector_to_global(self.joint2)
+            der_x1 = 2 * (new_joint_global_location1[0] - new_joint_global_location2[0]) * 1
+            der_y1 = 2 * (new_joint_global_location1[1] - new_joint_global_location2[1]) * 1
+            der_z1 = 2 * (new_joint_global_location1[2] - new_joint_global_location2[2]) * 1
+            der_a1 = (2 * (new_joint_global_location1 - new_joint_global_location2) *
+                      np.array([-self.joint1[0] * sin(a1_rad) - self.joint1[1] * cos(a1_rad),
+                                self.joint1[0] * cos(a1_rad) - self.joint1[1] * sin(a1_rad),
+                                0])).sum()
             der_alpha1 = np.pi * der_a1 / 180
             # derivatives for line: new_joint_global_location1 = self.comp1.local_vector_to_global(self.joint1)
-            new_joint_global_location2 = self.comp2.local_vector_to_global(self.joint2)
-            der_x2 = 2 * new_joint_global_location2[0] * (1 + cos(a2_rad) + sin(a2_rad))
-            der_y2 = 2 * new_joint_global_location2[0] * (1 - sin(a2_rad) + cos(a2_rad))
-            der_z2 = 2 * new_joint_global_location2[0] * 1
-            der_a2 = -x2 * sin(a2_rad) - y2 * cos(a2_rad) + x2 * cos(a2_rad) - y2 * sin(a2_rad)
+            der_x2 = 2 * (new_joint_global_location1[0] - new_joint_global_location2[0]) * -1
+            der_y2 = 2 * (new_joint_global_location1[1] - new_joint_global_location2[1]) * -1
+            der_z2 = 2 * (new_joint_global_location1[2] - new_joint_global_location2[2]) * -1
+            der_a2 = (2 * (new_joint_global_location1 - new_joint_global_location2) *
+                      np.array([self.joint2[0] * sin(a2_rad) + self.joint2[1] * cos(a2_rad),
+                                -self.joint2[0] * cos(a2_rad) + self.joint2[1] * sin(a2_rad),
+                                0])).sum()
             der_alpha2 = np.pi * der_a2 / 180
             # new_rotation_axis1_orientation = self.comp1.get_global_orientation(self.rotation_axis1)
             # new_rotation_axis2_orientation = self.comp2.get_global_orientation(self.rotation_axis2)
@@ -225,6 +232,7 @@ class FixedConnection(Connection):
         self.fixed_orientation = fixed_orientation
         self.fix_alpha = fixed_orientation.alpha is not None
 
+        # the order params are inserted must be same as order in const and cost_prime
         self.params[(self.comp.id, 'x')] = 0
         self.params[(self.comp.id, 'y')] = 0
         self.params[(self.comp.id, 'z')] = 0
@@ -235,7 +243,7 @@ class FixedConnection(Connection):
 
     def get_constraint(self):
         def const(positionx, positiony, positionz,
-                  gamma, beta, alpha=None):
+                  beta, gamma, alpha=None):
             # update the positions of components
             self.params[(self.comp.id, 'x')] = positionx
             self.params[(self.comp.id, 'y')] = positiony
@@ -266,7 +274,7 @@ class FixedConnection(Connection):
 
     def get_constraint_prime(self):
         def const_prime(positionx, positiony, positionz,
-                        gamma, beta, alpha=None):
+                        beta, gamma, alpha=None):
             der_pos = 2 * (np.array([positionx, positiony, positionz]) - self.fixed_position.vector())
             der_dict = {(self.comp.id, 'x'): der_pos[0],
                         (self.comp.id, 'y'): der_pos[1],
@@ -274,7 +282,7 @@ class FixedConnection(Connection):
                         (self.comp.id, 'gamma'): 2 * (gamma - self.fixed_orientation.gamma),
                         (self.comp.id, 'beta'): 2 * (beta - self.fixed_orientation.beta)}
             if self.fix_alpha:
-                der_dict[(self.comp.id, 'alpha')] = 2 * (alpha - self.fixed_orientation.alpha),
+                der_dict[(self.comp.id, 'alpha')] = 2 * (alpha - self.fixed_orientation.alpha)
             return der_dict
 
         return const_prime
