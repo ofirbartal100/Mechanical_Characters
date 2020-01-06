@@ -34,8 +34,7 @@ class Alignment:
         return np.array([self.gamma, self.beta, self.alpha])
 
     def get_rotation_obj(self):
-        print(Rotation.from_euler('xyz', self.vector() * 360, degrees=True).apply([1, 1, 1]))
-        return Rotation.from_euler('xyz', self.vector() * 360, degrees=True)
+        return Rotation.from_euler('xyz', self.vector(), degrees=True)
 
 
 class Configuration:
