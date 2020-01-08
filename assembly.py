@@ -1,12 +1,13 @@
 from parts import *
 from connections import *
 import numpy as np
+from collections import defaultdict
 
 
 class Assembly:
     id_counter = 0
 
-    def __init__(self, connection_list, newt_iters=100, newt_tolerance=1e-6):
+    def __init__(self, connection_list, newt_iters=1000, newt_tolerance=1e-6):
         self.con_list = connection_list
         self.iterations = newt_iters
         self.tolerance = newt_tolerance
@@ -58,6 +59,7 @@ class Assembly:
             for i, con in enumerate(self.con_list):
                 gradient_dict = con.get_constraint_prime()(
                     *[param_list[self.param_index[p]] for p in con.get_free_params()])
+                # why is the gradient on y?
                 for k in gradient_dict:
                     joint_grad_dict[k] += gradient_dict[k]
             # order the result according to param_index
@@ -98,8 +100,10 @@ class Assembly:
         x = self.get_cur_state_array()
         for n in range(self.iterations):
             f = self.const(x)
+            state_f = self.get_state_from_array(x)
             df = self.const_deriv(x)
-
+            state_df = self.get_state_from_array(df)
+            # deriv on alpha should cancel in direction
             if abs(f) < self.tolerance:  # exit function if we're close enough
                 converged = True
                 break
@@ -113,6 +117,12 @@ class Assembly:
     def update_cur_state_from_array(self, new_state_array):
         for param, idx in self.param_index.items():
             self.cur_state[param] = new_state_array[idx]
+
+    def get_state_from_array(self, state_array):
+        state = {}
+        for param, idx in self.param_index.items():
+            state[param] = state_array[idx]
+        return state
 
     def get_cur_state_array(self):
         return np.array([self.cur_state[k] for k in self.param_index])
