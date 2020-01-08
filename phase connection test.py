@@ -16,7 +16,8 @@ assembly = Assembly([PhaseConnection(actuator, gear1),
 # move!
 for i in range(360):
     actuator.turn(1)
-    assembly.update_state()
+    assembly.update_state_with_minimization()
+    # assembly.update_state()
     print(assembly.cur_state)
 
 print(gear1.configuration.alignment.alpha)

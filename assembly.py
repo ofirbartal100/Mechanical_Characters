@@ -1,3 +1,5 @@
+from scipy import optimize
+
 from parts import *
 from connections import *
 import numpy as np
@@ -12,12 +14,37 @@ class Assembly:
         self.iterations = newt_iters
         self.tolerance = newt_tolerance
         self.const, self.param_index = self.get_assembly_constraint()
+        self.constraints_for_minimization = self.get_assembly_constraint_for_minimization()
         self.const_deriv = self.get_assembly_constraints_deriv()
         self.cur_state = self.free_params_in_assembly()
         # make sure the assembly is valid
         self.update_state()
         self.id = Assembly.id_counter
         Assembly.id_counter += 1
+
+    def get_assembly_constraint_for_minimization(self):
+        """
+        generates a master constraint that can be optimized via Newton Raphson
+        :param connection_list:
+        :return: the constrain describing the whole assemply
+                and the index (dict(param:position)) of the params
+        """
+        param_index = {p: i for i, p in enumerate(self.free_params_in_assembly())}
+
+        def assembly_const(x):
+            """
+            :param param_list: list of parameters for each constraint
+                               must be ordered according to param_index
+            :return: sum of constraints parameterized with param_list
+            """
+            result = 0
+            for i, con in enumerate(self.con_list):
+                f = con.get_constraint_for_minimization()
+                # use p[0]-1 to get the index of the parameter in the whole parameters array x
+                result += f(*([x[p[0]-1] for p in con.get_free_params()]))
+            return result
+
+        return assembly_const
 
     def get_assembly_constraint(self):
         """
@@ -113,6 +140,35 @@ class Assembly:
             self.update_cur_state_from_array(x)
         else:
             raise (RuntimeError('failed to update state, illegal assembly or not enough iterations'))
+
+    def update_state_with_minimization(self):
+        """
+        update state of assembly to
+        :return:
+        """
+        x = self.get_cur_state_array()
+
+        ret = optimize.minimize(self.constraints_for_minimization, x)
+        if(ret['success']):
+            self.update_cur_state_from_array(ret['x'])
+        else:
+            raise (RuntimeError('failed to update state, illegal assembly or not enough iterations'))
+
+        # for n in range(self.iterations):
+        #     f = self.const(x)
+        #     state_f = self.get_state_from_array(x)
+        #     df = self.const_deriv(x)
+        #     state_df = self.get_state_from_array(df)
+        #     # deriv on alpha should cancel in direction
+        #     if abs(f) < self.tolerance:  # exit function if we're close enough
+        #         converged = True
+        #         break
+        #
+        #     x = x - df * f / np.linalg.norm(df) ** 2  # update guess
+        # if converged:
+        #     self.update_cur_state_from_array(x)
+        # else:
+        #     raise (RuntimeError('failed to update state, illegal assembly or not enough iterations'))
 
     def update_cur_state_from_array(self, new_state_array):
         for param, idx in self.param_index.items():

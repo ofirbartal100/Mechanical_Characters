@@ -203,6 +203,24 @@ class PhaseConnection(Connection):
 
             return const
 
+    def get_constraint_for_minimization(self):
+        if self.actuator is not None:
+            def const(alpha1):
+                self.params[(self.gear1.id, 'alpha')] = alpha1
+                self.gear1.rotate(Alignment(0, 0, alpha1))
+                return (alpha1 - self.actuator.get_alignment().alpha) ** 2
+
+            return const
+        else:
+            def const(alpha1, alpha2):
+                self.params[(self.gear1.id, 'alpha')] = alpha1
+                self.params[(self.gear2.id, 'alpha')] = alpha2
+                self.gear1.set_alpha(alpha1)
+                self.gear2.set_alpha(alpha2)
+                return (alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2)) ** 2
+
+            return const
+
     def get_constraint_prime(self):
         if self.actuator is not None:
             # (alpha1 - self.actuator.get_alignment().alpha) ** 2
