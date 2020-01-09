@@ -114,6 +114,10 @@ class Assembly:
     #         raise (RuntimeError('failed to update state, illegal assembly or not enough iterations'))
 
     def update_state(self):
+        '''
+
+        :return: True/False to indicate convergance
+        '''
         x = self.get_cur_state_array()
         res = minimize(self.const, x)
         if res.success:
