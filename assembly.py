@@ -323,10 +323,10 @@ def return_prototype():
 
 
 def create_assemblyA():
-    new_assembly = sample_from_cur_assemblyA(return_prototype(), gear_diff_val=4, stick_diff_val=4, position_diff_val=2)
+    new_assembly = sample_from_cur_assemblyA(return_prototype(), gear_diff_val=2, stick_diff_val=2, position_diff_val=2)
     while not is_vaild_assembleA(new_assembly):
         print("not valid assembly")
-        new_assembly = sample_from_cur_assemblyA(return_prototype(), gear_diff_val=4, stick_diff_val=4,
+        new_assembly = sample_from_cur_assemblyA(return_prototype(), gear_diff_val=2, stick_diff_val=2,
                                                  position_diff_val=2)
     return new_assembly
 
