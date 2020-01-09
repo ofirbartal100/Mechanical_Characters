@@ -5,6 +5,7 @@ from collections import defaultdict
 from scipy.optimize import minimize
 from matplotlib import pyplot as plt
 
+import time
 import random
 from configuration import *
 
@@ -257,11 +258,11 @@ def is_vaild_assembleA(assemblyA):
     return True
 
 
-def get_assembly_curve(assembly):
+def get_assembly_curve(assembly,number_of_points= 360):
     assembly_curve = []
     actuator = assembly.actuator
-    for i in range(360):
-        actuator.turn(i)
+    for i in range(number_of_points):
+        actuator.turn(360/number_of_points)
         assembly.update_state()
         assembly_curve.append(assembly.get_red_point_position())
     return assembly_curve
@@ -283,8 +284,9 @@ def recursive_sample_assemblyA(assemblyA, curve_database=[], num_of_samples_arou
     for i in range(num_of_samples_around):
         new_assemblyA = sample_from_cur_assemblyA(assemblyA)
         if is_vaild_assembleA(new_assemblyA):
-            # assembly_curve = get_assembly_curve(new_assemblyA)
-            assembly_curve = [1]
+            print("valid assembly!")
+            assembly_curve = get_assembly_curve(new_assemblyA,umber_of_points= 10)
+            #assembly_curve = [1]
             if is_dissimilar(assembly_curve, curve_database):
                 curve_database.append(assembly_curve)
                 accepted_assemblies.append(new_assemblyA)
@@ -334,8 +336,8 @@ def create_assemblyA():
 def create_assemblyA_database(min_samples_number=1000):
     origin_assembly = create_assemblyA()
     database = [origin_assembly]
-    # curve_database = [get_assembly_curve(origin_assembly)]
-    curve_database = [[1]]
+    curve_database = [get_assembly_curve(origin_assembly)]
+    #curve_database = [[1]]
     while len(database) < min_samples_number:
         accepted_assemblies, curve_database = recursive_sample_assemblyA(origin_assembly, curve_database)
         database += accepted_assemblies
@@ -349,12 +351,12 @@ def create_assemblyA_database(min_samples_number=1000):
 
         origin_assembly = create_assemblyA()
         database.append(origin_assembly)
-        # curve_database.append(get_assembly_curve(origin_assembly))
-        curve_database.append([1])
+        curve_database.append(get_assembly_curve(origin_assembly))
+        #curve_database.append([1])
     return database, curve_database
 
 
-class AssemblyA:
+class AssemblyA(Assembly):
 
     def plot_assembly(self):
         fig, ax = plt.subplots()
@@ -398,6 +400,8 @@ class AssemblyA:
 
         self.red_point_component = self.components[1]
 
+        Assembly.__init__(self, self.connections )
+
     def get_constraints(self):
         C = lambda s: 0
         for connection in self.connections:
@@ -410,3 +414,46 @@ class AssemblyA:
         """
         return self.red_point_component.get_global_position(np.array([self.red_point_component.length, 0, 0]))
 
+
+database, curve_databas = create_assemblyA_database(1)
+
+print(len(database))
+print(len(curve_databas))
+
+# config = create_assemblyA().config
+
+config = database[5].config
+print("------------")
+for key1 in config:
+    print(key1)
+    if isinstance(config[key1], dict):
+        for key in config[key1]:
+            print(key)
+            print(config[key1][key])
+    else:
+        print(config[key1])
+
+# assembly = return_prototype()
+# actuator = assembly.actuator
+#
+#
+# gear1 = assembly.components[0]
+# gear2 = assembly.components[2]
+# stick1 = assembly.components[1]
+# stick2 = assembly.components[3]
+#
+# for i in range(100):
+#     t = time.time()
+#     actuator.turn(1)
+#     print("success: ", assembly.update_state())
+#     print("time: ", time.time() - t)
+#
+#     print('actuator turned: ', i)
+#     print('gear1 alpha:', np.rad2deg(gear1.configuration.alignment.vector()))
+#     print('gear1 position:', gear1.configuration.position.vector())
+#     print('gear2 orientation:', np.rad2deg(gear2.configuration.alignment.vector()))
+#     print('gear2 position:', gear2.configuration.position.vector())
+#     print('stick1 orientation:', np.rad2deg(stick1.configuration.alignment.vector()))
+#     print('stick1 position:', stick1.configuration.position.vector())
+#     print('red point position:', assembly.get_red_point_position())
+#     print("***************************************************************")
