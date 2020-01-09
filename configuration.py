@@ -31,7 +31,7 @@ class Alignment:
         self.alpha = np.deg2rad(alpha) if alpha is not None else None
 
     def vector(self):
-        return np.array([self.gamma, self.beta, self.alpha])
+        return np.rad2deg(np.array([self.gamma, self.beta, self.alpha]))
 
     def get_rotation_obj(self):
         return Rotation.from_euler('xyz', self.vector(), degrees=False)

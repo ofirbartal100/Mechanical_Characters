@@ -36,7 +36,10 @@ class Component(ABC):
         :param local_position: a coordinate vector
         :return: a translated Posiotion object
         """
-        return self.configuration.position.vector() + local_position
+        if isinstance(local_position, Point):
+            local_position = local_position.vector()
+
+        return self.local_vector_to_global(local_position)
 
     def local_vector_to_global(self, vec):
         """

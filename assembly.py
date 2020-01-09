@@ -3,6 +3,7 @@ from connections import *
 import numpy as np
 from collections import defaultdict
 from scipy.optimize import minimize
+from matplotlib import pyplot as plt
 
 
 class Assembly:
@@ -14,7 +15,8 @@ class Assembly:
         self.const_deriv = self.get_assembly_constraints_deriv()
         self.cur_state = self.free_params_in_assembly()
         # make sure the assembly is valid
-        self.update_state()
+        if not self.update_state():
+            raise Exception("assembly failed to init")
         self.id = Assembly.id_counter
         Assembly.id_counter += 1
 
@@ -141,6 +143,21 @@ class Assembly:
 
 
 class AssemblyA:
+
+    def plot_assembly(self):
+        fig, ax = plt.subplots()
+        for comp in self.components:
+            if isinstance(comp, Stick):
+                edge1 = comp.configuration.position.vector()[:2]
+                edge2 = comp.get_global_position(Point(comp.length, 0, 0))[:2]
+                ax.plot(edge1, edge2, '-')
+            if isinstance(comp, Gear):
+                center = comp.configuration.position.vector()[:2]
+                radius = comp.radius
+                direction = comp.get_global_position(Point(comp.radius, 0, 0))[:2]
+                ax.add_artist(plt.Circle(center, radius))
+                ax.plot(center, direction, '-')
+        fig.show()
 
     def __init__(self, config):
         self.config = config
