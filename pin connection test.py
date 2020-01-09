@@ -5,22 +5,19 @@ from assembly import Assembly
 import time
 
 actuator = Actuator()
-gear1 = Gear(radius=1, center=Point(0, 0, 0), orientation=Alignment(0, 0, 0))
-gear2 = Gear(radius=1, center=Point(2, 0, 0), orientation=Alignment(0, 0, 0))
-stick1 = Stick(length=2, edge=Point(0.5, 0, 0), orientation=Alignment(0, 0, 0))
+gear1 = Gear(radius=10)
+gear2 = Gear(radius=1)
+stick1 = Stick(length=20)
 assembly = Assembly([PhaseConnection(actuator, gear1),
-                     PhaseConnection(gear1, gear2),
                      FixedConnection(gear1, Point(0, 0, 0), Alignment(0, 0, None)),
-                     PinConnection(gear1, stick1, Point(0.5, 0, 0), Point(0, 0, 0)),
-                     PinConnection(gear2, stick1, Point(2.5, 0, 0), Point(0, 0, 0)),
-                     FixedConnection(gear2, Point(2, 0, 0), Alignment(0, 0, None)),
+                     PinConnection(gear1, stick1, Point(5, 0, 0), Point(0, 0, 0)),
                      ])
 
-for i in range(1000):
-    actuator.turn(360/1000)
+for i in range(360):
+    actuator.turn(1)
     print("success: ", assembly.update_state())
     t = time.time()
-    print('actuator turned: ', i*360/1000)
+    print('actuator turned: ', i)
     print('gear1 orientation:', gear1.configuration.alignment.vector())
     print('gear1 position:', gear1.configuration.position.vector())
     print('gear2 orientation:', gear2.configuration.alignment.vector())

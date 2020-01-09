@@ -7,8 +7,8 @@ class Gear(Component):
     The gear center is at the origin and phase is the alpha from configuration
     """
 
-    def __init__(self, radius, center, orientation):
-        Component.__init__(self, center, orientation)
+    def __init__(self, radius):
+        Component.__init__(self)
         self.radius = radius
 
     def get_alignment(self):
@@ -21,7 +21,7 @@ class Gear(Component):
 class Actuator(Gear):
 
     def __init__(self):
-        Gear.__init__(self, radius=0, center=Point(0, 0, 0), orientation=Alignment(0, 0, 0))
+        Gear.__init__(self, radius=0)
 
     def turn(self, angle):
         """
@@ -36,6 +36,6 @@ class Stick(Component):
     the stick starts at the origin and it's direction is parallel to the local X axis
     """
 
-    def __init__(self, length, edge, orientation):
-        Component.__init__(self, edge, orientation)
+    def __init__(self, length):
+        Component.__init__(self)
         self.length = length
