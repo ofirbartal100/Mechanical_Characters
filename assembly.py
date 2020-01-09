@@ -407,7 +407,6 @@ for key1 in config:
     print(key1)
     if isinstance(config[key1], dict):
         for key in config[key1]:
-            #if key not in ["center","orientation","edge"]:
             print(key)
             print(config[key1][key])
     else:
