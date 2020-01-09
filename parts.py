@@ -39,3 +39,6 @@ class Stick(Component):
     def __init__(self, length, edge, orientation):
         Component.__init__(self, edge, orientation)
         self.length = length
+
+    def get_local_position(self):
+        return self.configuration.position.vector

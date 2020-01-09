@@ -15,6 +15,8 @@ class Point:
     def vector(self):
         return np.array([self.x, self.y, self.z])
 
+    def __str__(self):
+        return str(self.vector())
 
 class Alignment:
     """
@@ -36,6 +38,8 @@ class Alignment:
     def get_rotation_obj(self):
         return Rotation.from_euler('xyz', self.vector(), degrees=False)
 
+    def __str__(self):
+        return str(self.vector())
 
 class Configuration:
     def __init__(self, position, alignment):
