@@ -2,15 +2,14 @@ from parts import *
 from connections import *
 import numpy as np
 from collections import defaultdict
+from scipy.optimize import minimize
 
 
 class Assembly:
     id_counter = 0
 
-    def __init__(self, connection_list, newt_iters=100, newt_tolerance=1e-6):
+    def __init__(self, connection_list):
         self.con_list = connection_list
-        self.iterations = newt_iters
-        self.tolerance = newt_tolerance
         self.const, self.param_index = self.get_assembly_constraint()
         self.const_deriv = self.get_assembly_constraints_deriv()
         self.cur_state = self.free_params_in_assembly()
@@ -91,28 +90,41 @@ class Assembly:
             params.update(const.get_free_params())
         return len(params)
 
-    def update_state(self):
-        """
-        update state of assembly to
-        :return:
-        """
-        converged = False
-        x = self.get_cur_state_array()
-        for n in range(self.iterations):
-            f = self.const(x)
-            state_f = self.get_state_from_array(x)
-            df = self.const_deriv(x)
-            state_df = self.get_state_from_array(df)
-            # deriv on alpha should cancel in direction
-            if abs(f) < self.tolerance:  # exit function if we're close enough
-                converged = True
-                break
+    # def update_state(self):
+    #     """
+    #     update state of assembly to
+    #     :return:
+    #     """
+    #     converged = False
+    #     x = self.get_cur_state_array()
+    #     for n in range(self.iterations):
+    #         f = self.const(x)
+    #         state_f = self.get_state_from_array(x)
+    #         df = self.const_deriv(x)
+    #         state_df = self.get_state_from_array(df)
+    #         # deriv on alpha should cancel in direction
+    #         if abs(f) < self.tolerance:  # exit function if we're close enough
+    #             converged = True
+    #             break
+    #
+    #         x = x - df * f / np.linalg.norm(df) ** 2  # update guess
+    #     if converged:
+    #         self.update_cur_state_from_array(x)
+    #     else:
+    #         raise (RuntimeError('failed to update state, illegal assembly or not enough iterations'))
 
-            x = x - df * f / np.linalg.norm(df) ** 2  # update guess
-        if converged:
-            self.update_cur_state_from_array(x)
+    def update_state(self):
+        '''
+
+        :return: True/False to indicate convergance
+        '''
+        x = self.get_cur_state_array()
+        res = minimize(self.const, x)
+        if res.success:
+            self.update_cur_state_from_array(res['x'])
+            return True
         else:
-            raise (RuntimeError('failed to update state, illegal assembly or not enough iterations'))
+            return False
 
     def update_cur_state_from_array(self, new_state_array):
         for param, idx in self.param_index.items():
@@ -145,3 +157,5 @@ class AssemblyA:
         for connection in self.connections:
             C += connection.get_constraint()
         return C
+
+    # create binned data
