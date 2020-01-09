@@ -9,8 +9,8 @@ class Component(ABC):
 
     id_counter = 0
 
-    def __init__(self, position, alignment):
-        self.configuration = Configuration(position, alignment)
+    def __init__(self):
+        self.configuration = Configuration(Point(0, 0, 0), Alignment(0, 0, 0))
         self.id = Component.generate_id()
 
     @staticmethod
