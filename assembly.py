@@ -173,15 +173,22 @@ def sample_stick_parameters_from_current(stick_param, diff_val=2):
     return stick_param
 
 
-def sample_position(joint_location, diff_val=2, change_z = False):
-    for i in range(3 if change_z else 2):
-        joint_location[i] = round(random.uniform(-diff_val, diff_val), 2)
+def sample_position(joint_location, diff_val=2, num_of_axis = 3, enable_negative = True):
+    for i in range(num_of_axis):
+        new_pos = joint_location[i] + round(random.uniform(-diff_val, diff_val), 2)
+        if not enable_negative:
+            while new_pos<0:
+                new_pos = joint_location[i] + round(random.uniform(-diff_val, diff_val), 2)
+        joint_location[i] = new_pos
+
+
+
     return joint_location
 
 
-def sample_point(point, diff_val=2, change_z = True):
+def sample_point(point, diff_val=2, num_of_axis = 3):
     vector = point.vector()
-    vector = sample_position(vector, diff_val=diff_val,change_z = change_z)
+    vector = sample_position(vector, diff_val=diff_val,num_of_axis = num_of_axis)
     return Point(*vector)
 
 
@@ -196,15 +203,15 @@ def sample_from_cur_assemblyA(assemblyA, gear_diff_val=2, stick_diff_val=2, posi
     config["stick12_init_parameters"] = sample_stick_parameters_from_current(config["stick12_init_parameters"],
                                                                              stick_diff_val)
 
-    config["gear1_stick1_joint_location"] = sample_position(config["gear1_stick1_joint_location"], position_diff_val)
+    config["gear1_stick1_joint_location"] = sample_position(config["gear1_stick1_joint_location"], position_diff_val,num_of_axis = 2)
     # config["stick1_gear1_joint_location"] = sample_position(config["stick1_gear1_joint_location"],position_diff_val)
-    config["gear2_stick2_joint_location"] = sample_position(config["gear2_stick2_joint_location"], position_diff_val)
+    config["gear2_stick2_joint_location"] = sample_position(config["gear2_stick2_joint_location"], position_diff_val,num_of_axis = 2)
     # config["stick2_gear2_joint_location"] = sample_position(config["stick2_gear2_joint_location"],position_diff_val)
-    config["stick1_stick2_joint_location"] = sample_position(config["stick1_stick2_joint_location"], position_diff_val)
+    config["stick1_stick2_joint_location"] = sample_position(config["stick1_stick2_joint_location"], position_diff_val, num_of_axis = 1, enable_negative = False)
     # config["stick1_stick2_joint_location"] = sample_position(config["stick1_stick2_joint_location"],position_diff_val)
 
-    config["gear1_fixed_position"] = sample_point(config["gear1_fixed_position"], position_diff_val, change_z = False)
-    config["gear2_fixed_position"] = sample_point(config["gear2_fixed_position"], position_diff_val, change_z = False)
+    config["gear1_fixed_position"] = sample_point(config["gear1_fixed_position"], position_diff_val, num_of_axis = 2)
+    config["gear2_fixed_position"] = sample_point(config["gear2_fixed_position"], position_diff_val, num_of_axis = 2)
 
     return AssemblyA(config)
 
@@ -400,8 +407,8 @@ for key1 in config:
     print(key1)
     if isinstance(config[key1], dict):
         for key in config[key1]:
-            if key not in ["center","orientation","edge"]:
-                print(key)
-                print(config[key1][key])
+            #if key not in ["center","orientation","edge"]:
+            print(key)
+            print(config[key1][key])
     else:
         print(config[key1])
