@@ -6,7 +6,8 @@ from scipy.optimize import minimize
 import time
 import random
 from configuration import *
-
+import json
+import os
 
 class Assembly:
     id_counter = 0
@@ -257,11 +258,12 @@ def is_vaild_assembleA(assemblyA):
     return True
 
 
-def get_assembly_curve(assembly,number_of_points= 360):
+def get_assembly_curve(assembly, number_of_points= 360):
     assembly_curve = []
     actuator = assembly.actuator
     for i in range(number_of_points):
-        actuator.turn(360/number_of_points)
+        # actuator.turn(360/number_of_points)
+        actuator.turn(1) #just to check, remove it!
         assembly.update_state()
         assembly_curve.append(assembly.get_red_point_position())
     return assembly_curve
@@ -325,7 +327,7 @@ def return_prototype():
 
 
 def create_assemblyA():
-    new_assembly = sample_from_cur_assemblyA(return_prototype(),gear_diff_val = 1.0, stick_diff_val = 1.0, position_diff_val = 1.0)
+    new_assembly = sample_from_cur_assemblyA(return_prototype(),gear_diff_val = 0.5, stick_diff_val = 0.5, position_diff_val = 0.5)
     while not is_vaild_assembleA(new_assembly):
         print("not valid assembly")
         new_assembly = sample_from_cur_assemblyA(return_prototype())
@@ -385,8 +387,11 @@ class AssemblyA(Assembly):
                                           config["stick1_stick2_joint_location"])]
 
         self.red_point_component = self.components[1]
-
-        Assembly.__init__(self, self.connections )
+        anchor = []
+        for axis_1,axis_2 in zip(config["gear1_fixed_position"].vector(),config["gear2_fixed_position"].vector()):
+            anchor.append(round((axis_1+axis_2)/2,2))
+        self.anchor = np.array(anchor)
+        Assembly.__init__(self, self.connections)
 
     def get_constraints(self):
         C = lambda s: 0
@@ -401,28 +406,28 @@ class AssemblyA(Assembly):
         return self.red_point_component.get_global_position(np.array([self.red_point_component.length, 0, 0]))
 
 
-
-
-assembly = return_prototype()
-print(is_vaild_assembleA(assembly))
-database, curve_databas = create_assemblyA_database(2,2)
-
-print(len(database))
-print(len(curve_databas))
-
-config = create_assemblyA().config
-
-config = database[0].config
-print("------------")
-for key1 in config:
-    print(key1)
-    if isinstance(config[key1], dict):
-        for key in config[key1]:
-            print(key)
-            print(config[key1][key])
-    else:
-        print(config[key1])
-
+#
+# assembly = return_prototype()
+# print(is_vaild_assembleA(assembly))
+#
+# database, curve_database = create_assemblyA_database(2,2)
+#
+# print(len(database))
+# print(len(curve_database))
+#
+# config = create_assemblyA().config
+#
+# config = database[0].config
+# print("------------")
+# for key1 in config:
+#     print(key1)
+#     if isinstance(config[key1], dict):
+#         for key in config[key1]:
+#             print(key)
+#             print(config[key1][key])
+#     else:
+#         print(config[key1])
+#
 
 
 
