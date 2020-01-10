@@ -126,7 +126,7 @@ class Assembly:
         :return: True/False to indicate convergance
         '''
         x = self.get_cur_state_array()
-        res = minimize(self.const, x)
+        res = minimize(self.const, x, method='L-BFGS-B')
         if res.success:
             self.update_cur_state_from_array(res['x'])
             return True
@@ -371,6 +371,7 @@ class AssemblyA(Assembly):
                 direction = comp.get_global_position(Point(comp.radius, 0, 0))[:2]
                 ax.add_artist(plt.Circle(center, radius))
                 ax.plot(center, direction, '-')
+            ax.xtics
         fig.show()
 
     def __init__(self, config):
@@ -414,46 +415,3 @@ class AssemblyA(Assembly):
         """
         return self.red_point_component.get_global_position(np.array([self.red_point_component.length, 0, 0]))
 
-
-database, curve_databas = create_assemblyA_database(1)
-
-print(len(database))
-print(len(curve_databas))
-
-# config = create_assemblyA().config
-
-config = database[5].config
-print("------------")
-for key1 in config:
-    print(key1)
-    if isinstance(config[key1], dict):
-        for key in config[key1]:
-            print(key)
-            print(config[key1][key])
-    else:
-        print(config[key1])
-
-# assembly = return_prototype()
-# actuator = assembly.actuator
-#
-#
-# gear1 = assembly.components[0]
-# gear2 = assembly.components[2]
-# stick1 = assembly.components[1]
-# stick2 = assembly.components[3]
-#
-# for i in range(100):
-#     t = time.time()
-#     actuator.turn(1)
-#     print("success: ", assembly.update_state())
-#     print("time: ", time.time() - t)
-#
-#     print('actuator turned: ', i)
-#     print('gear1 alpha:', np.rad2deg(gear1.configuration.alignment.vector()))
-#     print('gear1 position:', gear1.configuration.position.vector())
-#     print('gear2 orientation:', np.rad2deg(gear2.configuration.alignment.vector()))
-#     print('gear2 position:', gear2.configuration.position.vector())
-#     print('stick1 orientation:', np.rad2deg(stick1.configuration.alignment.vector()))
-#     print('stick1 position:', stick1.configuration.position.vector())
-#     print('red point position:', assembly.get_red_point_position())
-#     print("***************************************************************")
