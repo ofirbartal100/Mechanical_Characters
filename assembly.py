@@ -284,7 +284,7 @@ def recursive_sample_assemblyA(assemblyA, curve_database=[], num_of_samples_arou
         new_assemblyA = sample_from_cur_assemblyA(assemblyA)
         if is_vaild_assembleA(new_assemblyA):
             print("valid assembly!")
-            assembly_curve = get_assembly_curve(new_assemblyA,number_of_points= 10)
+            assembly_curve = get_assembly_curve(new_assemblyA, number_of_points= 10)
             #assembly_curve = [1]
             if is_dissimilar(assembly_curve, curve_database):
                 print("added assembly")
@@ -332,7 +332,7 @@ def create_assemblyA():
     return new_assembly
 
 
-def create_assemblyA_database(min_samples_number=1000):
+def create_assemblyA_database(min_samples_number=1000,num_of_samples_around = 5):
     origin_assembly = create_assemblyA()
     #origin_assembly = return_prototype()
     database = [origin_assembly]
@@ -342,11 +342,11 @@ def create_assemblyA_database(min_samples_number=1000):
     print(f"curve_database is {curve_database}")
     while len(database) < min_samples_number:
         print(f"current database size {len(database)}")
-        accepted_assemblies, curve_database = recursive_sample_assemblyA(origin_assembly, curve_database)
+        accepted_assemblies, curve_database = recursive_sample_assemblyA(origin_assembly, curve_database, num_of_samples_around = num_of_samples_around)
         database += accepted_assemblies
         while len(accepted_assemblies) > 0 and len(database) < min_samples_number:
             origin_assembly = accepted_assemblies[0]
-            neighbor_accepted_assemblies, curve_database = recursive_sample_assemblyA(origin_assembly, curve_database,2)
+            neighbor_accepted_assemblies, curve_database = recursive_sample_assemblyA(origin_assembly, curve_database,num_of_samples_around = num_of_samples_around)
             # max_number=min_samples_number - len(database)
             database += neighbor_accepted_assemblies
             accepted_assemblies = accepted_assemblies[1:]
@@ -407,7 +407,7 @@ class AssemblyA(Assembly):
 
 assembly = return_prototype()
 print(is_vaild_assembleA(assembly))
-database, curve_databas = create_assemblyA_database(2)
+database, curve_databas = create_assemblyA_database(2,2)
 
 print(len(database))
 print(len(curve_databas))
