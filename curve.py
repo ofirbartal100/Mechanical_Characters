@@ -9,11 +9,12 @@ class Curve:
     '''
     this class represents a curve by its points and its features
     '''
+    A = np.array([0, 0, 0, 0, 0, 0, 0, 0], dtype=np.float64)
 
     def __init__(self, normalized_coordinates):
         self.features = np.zeros((6,), dtype=np.float64)
 
-        if not isinstance(normalized_coordinates,np.ndarray):
+        if not isinstance(normalized_coordinates, np.ndarray):
             self.points = np.array(normalized_coordinates, dtype=np.float64)
         else:
             self.points = normalized_coordinates
@@ -22,18 +23,18 @@ class Curve:
 
     def _calculate_features(self):
         n = len(self.points)
-        e = np.zeros(self.points.shape, dtype=np.float64)
+        self._e = np.zeros(self.points.shape, dtype=np.float64)
         for i in range(n):
-            e[i] = self.points[i] - self.points[(i - 1 + n) % n]
+            self._e[i] = self.points[i] - self.points[(i - 1 + n) % n]
 
-        t = np.zeros(self.points.shape, dtype=np.float64)
+        self._t = np.zeros(self.points.shape, dtype=np.float64)
         for i in range(n):
-            t[i] = e[i] / alg.norm(e[i])
+            self._t[i] = self._e[i] / alg.norm(self._e[i])
 
-        x_com = np.mean(self.points,axis=0)
+        x_com = np.mean(self.points, axis=0)
 
         # f0 - length of curve
-        self.features[0] = np.sum(np.array([alg.norm(_e) for _e in e]))
+        self.features[0] = np.sum(np.array([alg.norm(_e) for _e in self._e]))
 
         # f1 - surface area between anchor and curve
         f1 = 0
@@ -59,6 +60,50 @@ class Curve:
         projected_points = pca.transform(self.points)
         self.features[5] = len(poly_point_isect.isect_polygon(projected_points))
 
+    def _calculate_curvature(self):
+        self._curvature = np.zeros(self.points.shape)
+        num_p = len(self.points)
+        for i in range(num_p):
+            tj_1 = self._t[(i - 1 + num_p) % num_p]
+            tj = self._t[i]
+            cross = np.cross(tj_1, tj)
+            self._curvature[i] = ((2 / (1 + np.dot(tj, tj_1))) * cross)
+
+    @staticmethod
+    def normA(curve1, curve2):
+        really_big_number = 999999999.0
+        # calculate feature 7 - distance between curves
+        f7 = really_big_number
+        ci = curve1.points
+        cj = curve2.points
+        num_p = len(ci)
+        for l in range(num_p):
+            distance = 0
+            for k in range(num_p):
+                norm = np.linalg.norm(ci[k] - cj[(k + l) % num_p])
+                distance = distance + norm * norm
+
+            if distance < f7:
+                f7 = distance
+        f7 = np.sqrt(f7 / num_p)
+
+        # calculate feature 8 - discrete curvature distance
+        f8 = really_big_number
+        ki = curve1._curvature
+        kj = curve2._curvature
+        num_p = len(ci)
+        for l in range(num_p):
+            distance = 0
+            for k in range(num_p):
+                norm = np.linalg.norm(ki[k] - kj[(k + l) % num_p])
+                distance = distance + norm * norm
+
+            if distance < f8:
+                f8 = distance
+        f8 = np.sqrt(f8)
+
+        features_difference = np.concatenate((curve1.features - curve2.features, np.array([f7, f8])))
+        return np.sqrt(np.dot(features_difference * Curve.A, features_difference))
 
 # test
 # def random_noise():
