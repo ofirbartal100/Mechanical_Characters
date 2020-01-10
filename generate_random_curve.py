@@ -6,12 +6,11 @@ import sys
 def normalize_curve(curve,anchor):
     return ([list(sample-anchor) for sample in curve ])
 
-def generate_random_curve(number_of_curves , number_of_points=360 , path = r'C:\Users\A\Desktop\temp'):
+def generate_random_curve(number_of_curves , number_of_points=360 , curve_path = r'C:\Users\A\Desktop\temp'):
+
     print(f"will generate {number_of_curves} curves with {number_of_points} points")
-    if not os.path.exists(path+r"\assemblies"):
-        os.makedirs(path+r"\assemblies")
-    if not os.path.exists(path+r"\curves"):
-        os.makedirs(path+r"\curves")
+    if not os.path.exists(curve_path):
+        os.makedirs(curve_path)
 
     for i in range (number_of_curves):
         origin_assembly = create_assemblyA()
