@@ -3,8 +3,6 @@ from connections import *
 import numpy as np
 from collections import defaultdict
 from scipy.optimize import minimize
-from matplotlib import pyplot as plt
-
 import time
 import random
 from configuration import *
@@ -20,8 +18,7 @@ class Assembly:
         self.cur_state = self.free_params_in_assembly()
 
         # make sure the assembly is valid
-        if not self.update_state():
-            raise Exception("assembly failed to init")
+        self.update_state()
         self.id = Assembly.id_counter
         Assembly.id_counter += 1
 
@@ -126,7 +123,7 @@ class Assembly:
         :return: True/False to indicate convergance
         '''
         x = self.get_cur_state_array()
-        res = minimize(self.const, x, method='L-BFGS-B')
+        res = minimize(self.const, x)
         if res.success:
             self.update_cur_state_from_array(res['x'])
             return True
@@ -156,8 +153,8 @@ class Assembly:
 
 def sample_radius_from_current(radius, diff_val=2, min_radius=0.1):
     if radius < 0.5:
-        return max(min_radius, radius + round(random.uniform(-diff_val * radius, diff_val), 2))
-    return max(min_radius, radius + round(random.uniform(-diff_val, diff_val), 2))
+        return round(max(min_radius, radius + random.uniform(-diff_val * radius, diff_val)), 2)
+    return round(max(min_radius, radius + random.uniform(-diff_val, diff_val)), 2)
 
 
 def sample_gear_parameters_from_current(gear_param, diff_val=2):
@@ -167,8 +164,8 @@ def sample_gear_parameters_from_current(gear_param, diff_val=2):
 
 def sample_length_from_current(length, diff_val=2, min_length=0.1):
     if length < 0.5:
-        return max(min_length, length + round(random.uniform(-diff_val * length, diff_val), 2))
-    return max(min_length, length + round(random.uniform(-diff_val, diff_val), 2))
+        return round(max(min_length, length + random.uniform(-diff_val * length, diff_val)), 2)
+    return round(max(min_length, length + random.uniform(-diff_val, diff_val)), 2)
 
 
 def sample_stick_parameters_from_current(stick_param, diff_val=2):
@@ -178,10 +175,10 @@ def sample_stick_parameters_from_current(stick_param, diff_val=2):
 
 def sample_position(joint_location, diff_val=2, num_of_axis = 3, enable_negative = True):
     for i in range(num_of_axis):
-        new_pos = joint_location[i] + round(random.uniform(-diff_val, diff_val), 2)
+        new_pos = round(joint_location[i] + random.uniform(-diff_val, diff_val), 2)
         if not enable_negative:
             while new_pos<0:
-                new_pos = joint_location[i] + round(random.uniform(-diff_val, diff_val), 2)
+                new_pos = round(joint_location[i] + random.uniform(-diff_val, diff_val), 2)
         joint_location[i] = new_pos
 
 
@@ -195,7 +192,7 @@ def sample_point(point, diff_val=2, num_of_axis = 3):
     return Point(*vector)
 
 
-def sample_from_cur_assemblyA(assemblyA, gear_diff_val=2, stick_diff_val=2, position_diff_val=2):
+def sample_from_cur_assemblyA(assemblyA, gear_diff_val=0.5, stick_diff_val=0.5, position_diff_val=0.5):
     config = assemblyA.config
     config["gear1_init_parameters"] = sample_gear_parameters_from_current(config["gear1_init_parameters"],
                                                                           gear_diff_val)
@@ -211,16 +208,17 @@ def sample_from_cur_assemblyA(assemblyA, gear_diff_val=2, stick_diff_val=2, posi
     config["gear2_stick2_joint_location"] = sample_position(config["gear2_stick2_joint_location"], position_diff_val,num_of_axis = 2)
     # config["stick2_gear2_joint_location"] = sample_position(config["stick2_gear2_joint_location"],position_diff_val)
     config["stick1_stick2_joint_location"] = sample_position(config["stick1_stick2_joint_location"], position_diff_val, num_of_axis = 1, enable_negative = False)
-    # config["stick1_stick2_joint_location"] = sample_position(config["stick1_stick2_joint_location"],position_diff_val)
+    config["stick2_stick1_joint_location"] = (config["stick12_init_parameters"]["length"],0,0)
 
-    config["gear1_fixed_position"] = sample_point(config["gear1_fixed_position"], position_diff_val, num_of_axis = 2)
-    config["gear2_fixed_position"] = sample_point(config["gear2_fixed_position"], position_diff_val, num_of_axis = 2)
+    config["gear1_fixed_position"] = sample_point(config["gear1_fixed_position"], position_diff_val, num_of_axis = 1)
+    config["gear2_fixed_position"] = sample_point(config["gear2_fixed_position"], position_diff_val, num_of_axis = 1)
 
     return AssemblyA(config)
 
 
 def is_vaild_assembleA(assemblyA):
     config = assemblyA.config
+
     # try:
     # assemblyA.update_state()
 
@@ -228,14 +226,15 @@ def is_vaild_assembleA(assemblyA):
         print(
             f" stick length {config['stick11_init_parameters']['length']} and joint location is in {config['stick1_stick2_joint_location'][0]}")
         return False
+
     if config["stick12_init_parameters"]['length'] < config["stick2_stick1_joint_location"][0]:
         print(
             f" stick length {config['stick12_init_parameters']['length']} and joint location is in {config['stick2_stick1_joint_location'][0]}")
 
         return False
 
-    joint_x, joint_y = config["gear1_fixed_position"].vector()[:2]
-    center_x, center_y = config["gear1_stick1_joint_location"][:2]
+    joint_x, joint_y =  config["gear1_stick1_joint_location"][:2]
+    center_x, center_y =(0,0)
     radius = config["gear1_init_parameters"]["radius"]
 
     if (joint_x - center_x) ** 2 + (joint_y - center_y) ** 2 > radius ** 2:
@@ -243,8 +242,8 @@ def is_vaild_assembleA(assemblyA):
             f" center gear 1 {center_x,center_y} with radius {radius} and joint location is in {joint_x,joint_y}")
         return False
 
-    joint_x, joint_y = config["gear2_fixed_position"].vector()[:2]
-    center_x, center_y = config["gear2_stick2_joint_location"][:2]
+    joint_x, joint_y = config["gear2_stick2_joint_location"][:2]
+    center_x, center_y = (0,0)
     radius = config["gear2_init_parameters"]["radius"]
     if (joint_x - center_x) ** 2 + (joint_y - center_y) ** 2 > radius ** 2:
         print(
@@ -273,8 +272,8 @@ def ofir_score(curve1, curve2):
 
 
 def is_dissimilar(curve, database, gamma=1):
-    for dataset_curve in database:
-        if ofir_score(curve, dataset_curve) < gamma:
+    for database_curve in database:
+        if ofir_score(curve, database_curve) < gamma:
             return False
     return True
 
@@ -285,9 +284,10 @@ def recursive_sample_assemblyA(assemblyA, curve_database=[], num_of_samples_arou
         new_assemblyA = sample_from_cur_assemblyA(assemblyA)
         if is_vaild_assembleA(new_assemblyA):
             print("valid assembly!")
-            assembly_curve = get_assembly_curve(new_assemblyA,umber_of_points= 10)
+            assembly_curve = get_assembly_curve(new_assemblyA, number_of_points= 10)
             #assembly_curve = [1]
             if is_dissimilar(assembly_curve, curve_database):
+                print("added assembly")
                 curve_database.append(assembly_curve)
                 accepted_assemblies.append(new_assemblyA)
 
@@ -325,54 +325,39 @@ def return_prototype():
 
 
 def create_assemblyA():
-    new_assembly = sample_from_cur_assemblyA(return_prototype(), gear_diff_val=4, stick_diff_val=4, position_diff_val=2)
+    new_assembly = sample_from_cur_assemblyA(return_prototype(),gear_diff_val = 1.0, stick_diff_val = 1.0, position_diff_val = 1.0)
     while not is_vaild_assembleA(new_assembly):
         print("not valid assembly")
-        new_assembly = sample_from_cur_assemblyA(return_prototype(), gear_diff_val=4, stick_diff_val=4,
-                                                 position_diff_val=2)
+        new_assembly = sample_from_cur_assemblyA(return_prototype())
     return new_assembly
 
 
-def create_assemblyA_database(min_samples_number=1000):
+def create_assemblyA_database(min_samples_number=1000,num_of_samples_around = 5):
     origin_assembly = create_assemblyA()
+
     database = [origin_assembly]
-    curve_database = [get_assembly_curve(origin_assembly)]
-    #curve_database = [[1]]
+    curve_database = [get_assembly_curve(origin_assembly,number_of_points = 10)]
+
+    print(f"origin_assembly initiaized")
+    print(f"curve_database is {curve_database}")
     while len(database) < min_samples_number:
-        accepted_assemblies, curve_database = recursive_sample_assemblyA(origin_assembly, curve_database)
+        print(f"current database size {len(database)}")
+        accepted_assemblies, curve_database = recursive_sample_assemblyA(origin_assembly, curve_database, num_of_samples_around = num_of_samples_around)
         database += accepted_assemblies
         while len(accepted_assemblies) > 0 and len(database) < min_samples_number:
             origin_assembly = accepted_assemblies[0]
-            neighbor_accepted_assemblies, curve_database = recursive_sample_assemblyA(origin_assembly, curve_database)
-            # max_number=min_samples_number - len(database)
+            neighbor_accepted_assemblies, curve_database = recursive_sample_assemblyA(origin_assembly, curve_database,num_of_samples_around = num_of_samples_around)
             database += neighbor_accepted_assemblies
             accepted_assemblies = accepted_assemblies[1:]
-            accepted_assemblies+=neighbor_accepted_assemblies
+            accepted_assemblies += neighbor_accepted_assemblies
 
         origin_assembly = create_assemblyA()
         database.append(origin_assembly)
         curve_database.append(get_assembly_curve(origin_assembly))
-        #curve_database.append([1])
     return database, curve_database
 
 
 class AssemblyA(Assembly):
-
-    def plot_assembly(self):
-        fig, ax = plt.subplots()
-        for comp in self.components:
-            if isinstance(comp, Stick):
-                edge1 = comp.configuration.position.vector()[:2]
-                edge2 = comp.get_global_position(Point(comp.length, 0, 0))[:2]
-                ax.plot(edge1, edge2, '-')
-            if isinstance(comp, Gear):
-                center = comp.configuration.position.vector()[:2]
-                radius = comp.radius
-                direction = comp.get_global_position(Point(comp.radius, 0, 0))[:2]
-                ax.add_artist(plt.Circle(center, radius))
-                ax.plot(center, direction, '-')
-            ax.xtics
-        fig.show()
 
     def __init__(self, config):
         self.config = config
@@ -415,3 +400,53 @@ class AssemblyA(Assembly):
         """
         return self.red_point_component.get_global_position(np.array([self.red_point_component.length, 0, 0]))
 
+
+
+
+assembly = return_prototype()
+print(is_vaild_assembleA(assembly))
+database, curve_databas = create_assemblyA_database(2,2)
+
+print(len(database))
+print(len(curve_databas))
+
+config = create_assemblyA().config
+
+config = database[0].config
+print("------------")
+for key1 in config:
+    print(key1)
+    if isinstance(config[key1], dict):
+        for key in config[key1]:
+            print(key)
+            print(config[key1][key])
+    else:
+        print(config[key1])
+
+
+
+
+# assembly = return_prototype()
+# actuator = assembly.actuator
+#
+#
+# gear1 = assembly.components[0]
+# gear2 = assembly.components[2]
+# stick1 = assembly.components[1]
+# stick2 = assembly.components[3]
+#
+# for i in range(100):
+#     t = time.time()
+#     actuator.turn(1)
+#     print("success: ", assembly.update_state())
+#     print("time: ", time.time() - t)
+#
+#     print('actuator turned: ', i)
+#     print('gear1 alpha:', np.rad2deg(gear1.configuration.alignment.vector()))
+#     print('gear1 position:', gear1.configuration.position.vector())
+#     print('gear2 orientation:', np.rad2deg(gear2.configuration.alignment.vector()))
+#     print('gear2 position:', gear2.configuration.position.vector())
+#     print('stick1 orientation:', np.rad2deg(stick1.configuration.alignment.vector()))
+#     print('stick1 position:', stick1.configuration.position.vector())
+#     print('red point position:', assembly.get_red_point_position())
+#     print("***************************************************************")
