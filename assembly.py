@@ -22,12 +22,15 @@ def describe_comp(comp):
 class Assembly:
     id_counter = 0
 
-    def __init__(self, connection_list, components):
+    def __init__(self, connection_list, components, iters=100, tol=1e-4, plot_newt=False):
         self.components = components
         self.con_list = connection_list
+        self.iterations = iters
+        self.tolerance = tol
         self.const, self.param_index = self.get_assembly_constraint()
         self.const_deriv = self.get_assembly_constraints_deriv()
         self.cur_state = self.free_params_in_assembly()
+        self.plot_newt = plot_newt
 
         # make sure the assembly is valid
         if not self.update_state():
@@ -71,11 +74,13 @@ class Assembly:
                                must be ordered according to param_index
             :return: sum of constraints parameterized with param_list
             """
-            result = 0
+            result = []
             for i, con in enumerate(self.con_list):
-                result += con.get_constraint()(*[param_list[param_index[p]] for p in con.get_free_params()])
+                connection_const_res = con.get_constraint()(*[param_list[param_index[p]] for p in con.get_free_params()])
+                # result += connection_const_res
+                result = result + connection_const_res
                 # self.plot_assembly()
-            return result
+            return sum(result)
 
         return assembly_const, param_index
 
@@ -136,8 +141,11 @@ class Assembly:
     #     """
     #     converged = False
     #     x = self.get_cur_state_array()
+    #     # 1a,2a,1x,1y,1z,1b,1g,2x,2y,2z,2b,2g,3x,3y,3z,3a
     #     for n in range(self.iterations):
     #         f = self.const(x)
+    #         if self.plot_newt:
+    #             self.plot_assembly()
     #         state_f = self.get_state_from_array(x)
     #         df = self.const_deriv(x)
     #         state_df = self.get_state_from_array(df)
@@ -149,8 +157,9 @@ class Assembly:
     #         x = x - df * f / np.linalg.norm(df) ** 2  # update guess
     #     if converged:
     #         self.update_cur_state_from_array(x)
+    #         return True
     #     else:
-    #         raise (RuntimeError('failed to update state, illegal assembly or not enough iterations'))
+    #         return False
 
     def update_state(self):
         '''
@@ -161,6 +170,8 @@ class Assembly:
         res = minimize(self.const, x, method='Powell')
         if res.success:
             self.update_cur_state_from_array(res['x'])
+            x = self.get_cur_state_array()
+            print(self.const(x))
             return True
         else:
             return False

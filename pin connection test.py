@@ -9,24 +9,26 @@ import time
 actuator = Actuator()
 gear1 = Gear(radius=4)
 gear2 = Gear(radius=4)
-stick1 = Stick(length=20)
+stick1 = Stick(length=10)
 stick2 = Stick(length=10)
-
+# 1 1 5 5 6(5) 6(5) 6(5)
 t = time.time()
-assembly = Assembly([PhaseConnection(actuator, gear1),
-                     PhaseConnection(gear1, gear2, phase_diff=30),
-                     FixedConnection(gear1, Point(0, 0, 0), Alignment(0, 0, None)),
-                     FixedConnection(gear2, Point(-2, 20, 0), Alignment(0, 0, None)),
-                     PinConnection(gear1, stick1, Point(4, 0, 0), Point(0, 0, 0)),
-                     PinConnection(gear2, stick2, Point(4, 0, 0), Point(0, 0, 0)),
-                     PinConnection(stick1, stick2, Point(10, 0, 0), Point(10, 0, 0)),
-                     ], components=[gear1, gear2, stick1, stick2])
-
 # assembly = Assembly([PhaseConnection(actuator, gear1),
-#                      PhaseConnection(gear1, gear2),
+#                      PhaseConnection(gear1, gear2, phase_diff=30),
 #                      FixedConnection(gear1, Point(0, 0, 0), Alignment(0, 0, None)),
-#                      PinConnection(gear1, stick2, Point(10, 0, 0), Point(0, 0, 0)),
-#                      ], components=[gear1, gear2, stick2])
+#                      FixedConnection(gear2, Point(-2, 20, 0), Alignment(0, 0, None)),
+#                      PinConnection(gear1, stick1, Point(4, 0, 0), Point(0, 0, 0)),
+#                      PinConnection(gear2, stick2, Point(4, 0, 0), Point(0, 0, 0)),
+#                      PinConnection(stick1, stick2, Point(10, 0, 0), Point(10, 0, 0)),
+#                      ], components=[gear1, gear2, stick1, stick2])
+
+assembly = Assembly([PhaseConnection(actuator, gear1),
+                     # PhaseConnection(gear1, gear2),
+                     FixedConnection(gear1, Point(0, 0, 0), Alignment(0, 0, None)),
+                     FixedConnection(gear2, Point(0, 10, 0), Alignment(0, 0, None)),
+                     PinConnection(gear1, stick1, Point(4, 0, 0), Point(0, 0, 0)),
+                     PinConnection(gear2, stick1, Point(4, 0, 0), Point(10, 0, 0)),
+                     ], components=[gear1, gear2, stick1], plot_newt=False, tol=3, iters=1000)
 
 
 print("assemply initialized in: ", time.time()-t)
