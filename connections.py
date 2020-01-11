@@ -171,12 +171,13 @@ class PinConnection(Connection):
 
 class PhaseConnection(Connection):
 
-    def __init__(self, gear1, gear2, phase_diff=0):
+    def __init__(self, gear1, gear2, phase_diff=0, same_direc=False):
         Connection.__init__(self)
         self.gear1 = gear1
         self.gear2 = gear2
         self.phase_diff = phase_diff
         self.actuator = None
+        self.direction = -1 if same_direc else 1
         if self.gear1.radius == 0:
             self.actuator = self.gear1
             self.gear1 = self.gear2
@@ -194,7 +195,7 @@ class PhaseConnection(Connection):
             def const(alpha1):
                 self.params[(self.gear1.id, 'alpha')] = alpha1
                 self.gear1.rotate(Alignment(0, 0, alpha1))
-                return [(alpha1 - self.actuator.get_alignment().alpha) ** 2]
+                return [10 * (alpha1 - self.actuator.get_alignment().alpha) ** 2]
 
             return const
         else:
@@ -203,7 +204,8 @@ class PhaseConnection(Connection):
                 self.params[(self.gear2.id, 'alpha')] = alpha2
                 self.gear1.set_alpha(alpha1)
                 self.gear2.set_alpha(alpha2)
-                return [(alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2) + self.phase_diff) ** 2]
+                return [10 * (alpha1 - self.direction * self.gear1.get_phase_func(self.gear2)(
+                    alpha2) + self.direction * self.phase_diff) ** 2]
 
             return const
 

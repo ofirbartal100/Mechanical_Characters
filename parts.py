@@ -15,7 +15,7 @@ class Gear(Component):
         return self.configuration.alignment
 
     def get_phase_func(self, other_gear: "Gear"):
-        return lambda a: -(self.radius / other_gear.radius) * a
+        return lambda a: -(other_gear.radius / self.radius) * a
 
 
 class Actuator(Gear):

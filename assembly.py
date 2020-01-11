@@ -167,7 +167,7 @@ class Assembly:
         :return: True/False to indicate convergance
         '''
         x = self.get_cur_state_array()
-        res = minimize(self.const, x, method='Powell')
+        res = minimize(self.const, x, method='Powell', tol=self.tolerance)
         if res.success:
             self.update_cur_state_from_array(res['x'])
             x = self.get_cur_state_array()

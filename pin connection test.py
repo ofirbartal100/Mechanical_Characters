@@ -5,12 +5,13 @@ from parts import *
 from configuration import *
 from assembly import Assembly
 import time
+from pprint import pprint
 
 actuator = Actuator()
-gear1 = Gear(radius=4)
-gear2 = Gear(radius=4)
-stick1 = Stick(length=10)
-stick2 = Stick(length=10)
+gear1 = Gear(radius=20)
+gear2 = Gear(radius=6)
+stick1 = Stick(length=40)
+stick2 = Stick(length=100)
 # 1 1 5 5 6(5) 6(5) 6(5)
 t = time.time()
 # assembly = Assembly([PhaseConnection(actuator, gear1),
@@ -23,15 +24,16 @@ t = time.time()
 #                      ], components=[gear1, gear2, stick1, stick2])
 
 assembly = Assembly([PhaseConnection(actuator, gear1),
-                     # PhaseConnection(gear1, gear2),
+                     PhaseConnection(gear1, gear2, same_direc=True, phase_diff=90),
                      FixedConnection(gear1, Point(0, 0, 0), Alignment(0, 0, None)),
-                     FixedConnection(gear2, Point(0, 10, 0), Alignment(0, 0, None)),
-                     PinConnection(gear1, stick1, Point(4, 0, 0), Point(0, 0, 0)),
-                     PinConnection(gear2, stick1, Point(4, 0, 0), Point(10, 0, 0)),
-                     ], components=[gear1, gear2, stick1], plot_newt=False, tol=3, iters=1000)
+                     FixedConnection(gear2, Point(50, 0, 0), Alignment(0, 0, None)),
+                     # PinConnection(gear1, stick1, Point(20, 0, 0), Point(0, 0, 0)),
+                     # PinConnection(gear2, stick2, Point(6, 0, 0), Point(0, 0, 0)),
+                     # PinConnection(stick1, stick2, Point(40, 0, 0), Point(36, 0, 0)),
+                     ], components=[actuator, gear1, gear2], plot_newt=False, tol=1e-7, iters=1000)
 
 
-print("assemply initialized in: ", time.time()-t)
+print("assembly initialized in: ", time.time()-t)
 print('gear1 alpha:', np.rad2deg(gear1.configuration.alignment.alpha))
 print('gear2 alpha:', np.rad2deg(gear2.configuration.alignment.alpha))
 print('stick1 orientation:', stick1.configuration.alignment.vector())
@@ -43,12 +45,14 @@ desc = []
 
 # desc.append(assembly.describe_assembly())
 
-for i in range(5):
-    actuator.turn(45)
-    print('gear1 alpha:', np.rad2deg(gear1.configuration.alignment.alpha))
-    print('gear2 alpha:', np.rad2deg(gear2.configuration.alignment.alpha))
-    print("success: ", assembly.update_state())
+for i in range(360):
+    actuator.turn(10)
+    t = time.time()
+    print("converged: ",assembly.update_state())
+    print("time for update", time.time() - t)
+    pprint(assembly.describe_assembly())
     assembly.plot_assembly()
+    print("time for update", time.time() - t)
 
 #     t = time.time()
 #     desc.append(assembly.describe_assembly())
