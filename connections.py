@@ -195,7 +195,7 @@ class PhaseConnection(Connection):
             def const(alpha1):
                 self.params[(self.gear1.id, 'alpha')] = alpha1
                 self.gear1.rotate(Alignment(0, 0, alpha1))
-                return [10 * (alpha1 - self.actuator.get_alignment().alpha) ** 2]
+                return [(alpha1 - self.actuator.get_alignment().alpha) ** 2]
 
             return const
         else:
@@ -204,7 +204,7 @@ class PhaseConnection(Connection):
                 self.params[(self.gear2.id, 'alpha')] = alpha2
                 self.gear1.set_alpha(alpha1)
                 self.gear2.set_alpha(alpha2)
-                return [10 * (alpha1 - self.direction * self.gear1.get_phase_func(self.gear2)(
+                return [(alpha1 - self.direction * self.gear1.get_phase_func(self.gear2)(
                     alpha2) + self.direction * self.phase_diff) ** 2]
 
             return const

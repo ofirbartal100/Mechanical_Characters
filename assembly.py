@@ -58,6 +58,7 @@ class Assembly:
         # plt.ylim(-10, 10)
         plt.grid(linestyle='--')
         fig.show()
+        return fig
 
     def get_assembly_constraint(self):
         """
