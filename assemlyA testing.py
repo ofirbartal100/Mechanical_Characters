@@ -1,5 +1,14 @@
 from assembly import *
 
+# a = return_prototype()
+# print(is_vaild_assembleA(a))
+
+sample = AssemblyA_Sampler()
+
+sample.create_assemblyA_database(2)
+database, curve_databas  = sample.get_database(), sample.get_curve_database()
+
+
 
 # database, curve_databas = create_assemblyA_database(10)
 #
@@ -20,5 +29,5 @@ from assembly import *
 #     else:
 #         print(config[key1])
 
-a = return_prototype()
-a.plot_assembly()
+# a = return_prototype()
+# a.plot_assembly()
