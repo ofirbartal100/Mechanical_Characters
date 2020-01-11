@@ -1,3 +1,5 @@
+import json
+
 from connections import *
 from parts import *
 from configuration import *
@@ -5,31 +7,50 @@ from assembly import Assembly
 import time
 
 actuator = Actuator()
-gear1 = Gear(radius=10)
-gear2 = Gear(radius=5)
+gear1 = Gear(radius=4)
+gear2 = Gear(radius=4)
 stick1 = Stick(length=20)
 stick2 = Stick(length=10)
 
 t = time.time()
 assembly = Assembly([PhaseConnection(actuator, gear1),
-                     PhaseConnection(gear1, gear2),
+                     PhaseConnection(gear1, gear2, phase_diff=30),
                      FixedConnection(gear1, Point(0, 0, 0), Alignment(0, 0, None)),
-                     FixedConnection(gear1, Point(25, 0, 0), Alignment(0, 0, None)),
-                     PinConnection(gear1, stick1, Point(10, 0, 0), Point(0, 0, 0)),
-                     PinConnection(gear2, stick2, Point(5, 0, 0), Point(0, 0, 0)),
+                     FixedConnection(gear2, Point(-2, 20, 0), Alignment(0, 0, None)),
+                     PinConnection(gear1, stick1, Point(4, 0, 0), Point(0, 0, 0)),
+                     PinConnection(gear2, stick2, Point(4, 0, 0), Point(0, 0, 0)),
                      PinConnection(stick1, stick2, Point(10, 0, 0), Point(10, 0, 0)),
-                     ])
+                     ], components=[gear1, gear2, stick1, stick2])
+
+# assembly = Assembly([PhaseConnection(actuator, gear1),
+#                      PhaseConnection(gear1, gear2),
+#                      FixedConnection(gear1, Point(0, 0, 0), Alignment(0, 0, None)),
+#                      PinConnection(gear1, stick2, Point(10, 0, 0), Point(0, 0, 0)),
+#                      ], components=[gear1, gear2, stick2])
+
+
 print("assemply initialized in: ", time.time()-t)
-print('gear1 alpha:', np.deg2rad(gear1.configuration.alignment.alpha))
-print('gear2 alpha:', np.deg2rad(gear2.configuration.alignment.alpha))
+print('gear1 alpha:', np.rad2deg(gear1.configuration.alignment.alpha))
+print('gear2 alpha:', np.rad2deg(gear2.configuration.alignment.alpha))
 print('stick1 orientation:', stick1.configuration.alignment.vector())
 print('stick1 position:', stick1.configuration.position.vector())
-print('stick2 orientation:', stick1.configuration.alignment.vector())
-print('stick2 position:', stick1.configuration.position.vector())
-for i in range(360):
-    actuator.turn(1)
-    t = time.time()
+print('stick2 orientation:', stick2.configuration.alignment.vector())
+print('stick2 position:', stick2.configuration.position.vector())
+assembly.plot_assembly()
+desc = []
+
+# desc.append(assembly.describe_assembly())
+
+for i in range(5):
+    actuator.turn(45)
+    print('gear1 alpha:', np.rad2deg(gear1.configuration.alignment.alpha))
+    print('gear2 alpha:', np.rad2deg(gear2.configuration.alignment.alpha))
     print("success: ", assembly.update_state())
+    assembly.plot_assembly()
+
+#     t = time.time()
+#     desc.append(assembly.describe_assembly())
+
 
     # print('actuator turned: ', i)
     # print('gear1 orientation:', gear1.configuration.alignment.vector())
@@ -38,7 +59,9 @@ for i in range(360):
     # print('gear2 position:', gear2.configuration.position.vector())
     # print('stick1 orientation:', stick1.configuration.alignment.vector())
     # print('stick1 position:', stick1.configuration.position.vector())
-    print("time: ", time.time()-t)
-    print("***************************************************************")
+    # print("time: ", time.time()-t)
+    # print("***************************************************************")
+
+#TODO: generate json describing motion of assembly
 
 

@@ -1,3 +1,5 @@
+import json
+
 from assembly import *
 
 
@@ -21,4 +23,6 @@ from assembly import *
 #         print(config[key1])
 
 a = return_prototype()
-a.plot_assembly()
+
+
+

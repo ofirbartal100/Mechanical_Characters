@@ -83,6 +83,7 @@ class PinConnection(Connection):
         self.params[(self.comp2.id, 'z')] = 0
         self.params[(self.comp2.id, 'alpha')] = 0
 
+
     def get_constraint(self):
         def const(position1x, position1y, position1z, alpha1,
                   position2x, position2y, position2z, alpha2):
@@ -165,10 +166,11 @@ class PinConnection(Connection):
 
 class PhaseConnection(Connection):
 
-    def __init__(self, gear1, gear2):
+    def __init__(self, gear1, gear2, phase_diff=0):
         Connection.__init__(self)
         self.gear1 = gear1
         self.gear2 = gear2
+        self.phase_diff = phase_diff
         self.actuator = None
         if self.gear1.radius == 0:
             self.actuator = self.gear1
@@ -196,7 +198,7 @@ class PhaseConnection(Connection):
                 self.params[(self.gear2.id, 'alpha')] = alpha2
                 self.gear1.set_alpha(alpha1)
                 self.gear2.set_alpha(alpha2)
-                return (alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2)) ** 2
+                return (alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2) + self.phase_diff) ** 2
 
             return const
 
