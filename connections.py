@@ -118,6 +118,19 @@ class PinConnection(Connection):
 
         return const
 
+    def get_constraint_by_the_book(self):
+        # should get 12 state variables
+        def const(x0, y0, z0, a0, b0, c0, x1, y1, z1, a1, b1, c1):
+            self.comp1.apply_state(x0, y0, z0, a0, b0, c0)
+            self.comp2.apply_state(x1, y1, z1, a1, b1, c1)
+            X = self.comp1.convert_to_global_coordinates(self.joint1) - self.comp2.convert_to_global_coordinates(
+                self.joint2)
+            V = self.comp1.convert_to_global_alignment(self.rotation_axis1) - self.comp2.convert_to_global_alignment(
+                self.rotation_axis2)
+            return [*X, *V]
+
+        return const
+
     def get_constraint_prime(self):
         def const_prime(x1, y1, z1, a1,
                         x2, y2, z2, a2):
@@ -169,6 +182,7 @@ class PinConnection(Connection):
         return const_prime
 
 
+# dont use! we dont bind 2 gears together
 class PhaseConnection(Connection):
 
     def __init__(self, gear1, gear2, phase_diff=0):
@@ -205,6 +219,24 @@ class PhaseConnection(Connection):
                 self.gear2.set_alpha(alpha2)
                 return [(alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2) + self.phase_diff) ** 2]
 
+            return const
+
+    def get_constraint_by_the_book(self):
+        # should get 12 state variables
+        def const(x0, y0, z0, a0, b0, c0, x1, y1, z1, a1, b1, c1):
+            # self.gear1.apply_state(x0, y0, z0, a0, b0, c0)
+            # self.gear2.apply_state(x1, y1, z1, a1, b1, c1)
+            r = self.gear2.num_of_teeth / self.gear1.num_of_teeth
+
+            return [a0 - r * (a1+self.phase_diff)]
+
+        # should get 6 state variables
+        def const_with_actuator(x0, y0, z0,a0, b0, c0):
+            return [a0 - self.actuator.get_phase()]
+
+        if self.with_actuator:
+            return const_with_actuator
+        else:
             return const
 
     def get_constraint_prime(self):
@@ -284,6 +316,16 @@ class FixedConnection(Connection):
                     xyz[2],
                     (gamma - self.fixed_orientation.gamma) ** 2,
                     (beta - self.fixed_orientation.beta) ** 2]
+
+        return const
+
+    def get_constraint_by_the_book(self):
+        # should get 12 state variables
+        def const(x0, y0, z0, a0, b0, c0):
+            # self.comp.apply_state(x0, y0, z0, a0, b0, c0)
+            X = np.array([x0, y0, z0]) - self.fixed_position
+            V = np.array([a0, b0, c0]) - self.fixed_orientation
+            return [*X, *V]
 
         return const
 
