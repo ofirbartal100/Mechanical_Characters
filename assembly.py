@@ -205,9 +205,8 @@ def sample_from_cur_assemblyA(assemblyA, gear_diff_val=0.5, stick_diff_val=0.5, 
                                                                              stick_diff_val)
 
     config["gear1_stick1_joint_location"] = sample_position(config["gear1_stick1_joint_location"], position_diff_val,num_of_axis = 2)
-    # config["stick1_gear1_joint_location"] = sample_position(config["stick1_gear1_joint_location"],position_diff_val)
     config["gear2_stick2_joint_location"] = sample_position(config["gear2_stick2_joint_location"], position_diff_val,num_of_axis = 2)
-    # config["stick2_gear2_joint_location"] = sample_position(config["stick2_gear2_joint_location"],position_diff_val)
+
     config["stick1_stick2_joint_location"] = sample_position(config["stick1_stick2_joint_location"], position_diff_val, num_of_axis = 1, enable_negative = False)
     config["stick2_stick1_joint_location"] = (config["stick2_init_parameters"]["length"],0,0)
 
@@ -227,9 +226,6 @@ def points_distance (point1, point2):
 
 def is_vaild_assembleA(assemblyA):
     config = assemblyA.config
-
-    # try:
-    # assemblyA.update_state()
 
 
     if config["stick1_init_parameters"]["length"] < config["stick1_stick2_joint_location"][0]:
@@ -464,9 +460,9 @@ class AssemblyA(Assembly):
         return self.red_point_component.get_global_position(np.array([self.red_point_component.length, 0, 0]))
 
 
-#
-# assembly = return_prototype()
-# print(is_vaild_assembleA(assembly))
+
+assembly = return_prototype()
+print(is_vaild_assembleA(assembly))
 #
 # database, curve_database = create_assemblyA_database(2,2)
 #
