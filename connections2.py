@@ -28,7 +28,7 @@ class Connection2(ABC):
         return self.id
 
     @abstractmethod
-    def get_constraint(self):
+    def get_constraint_by_the_book(self):
         pass
 
 
@@ -104,10 +104,10 @@ class PinConnection2(Connection2):
     def get_constraint_prime_by_the_book(self):
         def const_prime(x0, y0, z0, c0, b0, a0, x1, y1, z1, c1, b1, a1):
             # gradients for X by first component
-            r0xy = R.from_euler('xy', [c0, b0])
-            r0x = R.from_euler('x', c0)
-            r0z = R.from_euler('z', a0)
-            r0yz = R.from_euler('yz', [b0, a0])
+            r0xy = R.from_euler('xy', [c0, b0]).as_matrix()
+            r0x = R.from_euler('x', c0).as_matrix()
+            r0z = R.from_euler('z', a0).as_matrix()
+            r0yz = R.from_euler('yz', [b0, a0]).as_matrix()
 
             r0doa0 = np.array([[-np.sin(a0), np.cos(a0), 0],
                                [-np.cos(a0), -np.sin(a0), 0],
@@ -126,10 +126,10 @@ class PinConnection2(Connection2):
             doc0 = (r0doc0 @ r0yz) @ self.joint1
 
             # gradients for X by second component
-            r1xy = R.from_euler('xy', [c1, b1])
-            r1x = R.from_euler('x', c1)
-            r1z = R.from_euler('z', a1)
-            r1yz = R.from_euler('yz', [b1, a1])
+            r1xy = R.from_euler('xy', [c1, b1]).as_matrix()
+            r1x = R.from_euler('x', c1).as_matrix()
+            r1z = R.from_euler('z', a1).as_matrix()
+            r1yz = R.from_euler('yz', [b1, a1]).as_matrix()
 
             r1doa1 = np.array([[-np.sin(a1), np.cos(a1), 0],
                                [-np.cos(a1), -np.sin(a1), 0],
@@ -195,17 +195,17 @@ class PhaseConnection2(Connection2):
         self.params[(self.gear1.id, 'x')] = 0
         self.params[(self.gear1.id, 'y')] = 0
         self.params[(self.gear1.id, 'z')] = 0
-        self.params[(self.gear1.id, 'alpha')] = 0
-        self.params[(self.gear1.id, 'beta')] = 0
         self.params[(self.gear1.id, 'gamma')] = 0
+        self.params[(self.gear1.id, 'beta')] = 0
+        self.params[(self.gear1.id, 'alpha')] = 0
 
         if self.actuator is None:
             self.params[(self.gear2.id, 'x')] = 0
             self.params[(self.gear2.id, 'y')] = 0
             self.params[(self.gear2.id, 'z')] = 0
-            self.params[(self.gear2.id, 'alpha')] = 0
-            self.params[(self.gear2.id, 'beta')] = 0
             self.params[(self.gear2.id, 'gamma')] = 0
+            self.params[(self.gear2.id, 'beta')] = 0
+            self.params[(self.gear2.id, 'alpha')] = 0
 
     def get_constraint_by_the_book(self):
         # should get 12 state variables
@@ -260,9 +260,9 @@ class FixedConnection2(Connection2):
         self.params[(self.comp.id, 'x')] = 0
         self.params[(self.comp.id, 'y')] = 0
         self.params[(self.comp.id, 'z')] = 0
-        self.params[(self.comp.id, 'alpha')] = 0
-        self.params[(self.comp.id, 'beta')] = 0
         self.params[(self.comp.id, 'gamma')] = 0
+        self.params[(self.comp.id, 'beta')] = 0
+        self.params[(self.comp.id, 'alpha')] = 0
 
     def get_constraint_by_the_book(self):
         # should get 12 state variables

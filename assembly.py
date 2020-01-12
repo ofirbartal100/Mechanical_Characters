@@ -27,13 +27,16 @@ class Assembly:
         self.con_list = connection_list
         self.iterations = iters
         self.tolerance = tol
-        self.const, self.param_index = self.get_assembly_constraint()
-        self.const_deriv = self.get_assembly_constraints_deriv()
+        # self.const, self.param_index = self.get_assembly_constraint()
+        self.const, self.param_index = self.get_assembly_constraint2()
+        # self.const_deriv = self.get_assembly_constraints_deriv()
+        self.const_deriv = self.get_assembly_constraints_deriv2()
         self.cur_state = self.free_params_in_assembly()
         self.plot_newt = plot_newt
 
         # make sure the assembly is valid
-        if not self.update_state():
+        # if not self.update_state():
+        if not self.update_state2():
             raise Exception("assembly failed to init")
         self.id = Assembly.id_counter
         Assembly.id_counter += 1
@@ -92,7 +95,7 @@ class Assembly:
         :return: the constrain describing the whole assemply
                 and the index (dict(param:position)) of the params
         """
-        param_index = {p: i for i, p in enumerate(self.free_params_in_assembly())}
+        self.param_index = {p: i for i, p in enumerate(self.free_params_in_assembly())}
 
         def assembly_const(param_list):
             """
@@ -102,15 +105,42 @@ class Assembly:
             """
             result = []
             for i, con in enumerate(self.con_list):
-                connection_const_res = con.get_constraint()(
-                    *[param_list[param_index[p]] for p in con.get_free_params()])
+                connection_const_res = con.get_constraint_by_the_book()[0](
+                    *[param_list[self.param_index [p]] for p in con.get_free_params()])
                 # result += connection_const_res
                 result = result + connection_const_res
                 # self.plot_assembly()
             return 0.5 * np.array(result) @ np.array(result)
 
-        return assembly_const, param_index
+        return assembly_const, self.param_index
 
+
+    def get_assembly_constraints_deriv2(self):
+        """
+        generates a master constraint that can be optimized via Newton Raphson
+        :param connection_list:
+        :return: the constrain describing the whole assemply
+                and the index (dict(param:position)) of the params
+        """
+
+        def assembly_const_deriv(param_list):
+            """
+            :param param_list: list of parameters for each constraint
+                               must be ordered according to param_index
+            :return: sum of constraints parameterized with param_list
+            """
+            res = np.zeros(len(self.param_index))
+            for i, con in enumerate(self.con_list):
+                gradient = con.get_constraint_prime_by_the_book()[0](*[param_list[self.param_index[p]] for p in con.get_free_params()])
+                C = con.get_constraint_by_the_book()[0](*[param_list[self.param_index[p]] for p in con.get_free_params()])
+                local_grad = np.array(C) @ gradient
+                for j,p in enumerate(con.get_free_params()):
+                    res[self.param_index[p]] += local_grad[j]
+
+            return res
+
+
+        return assembly_const_deriv
 
     def get_assembly_constraints_deriv(self):
         """
@@ -196,6 +226,21 @@ class Assembly:
         '''
         x = self.get_cur_state_array()
         res = minimize(self.const, x, method='Powell')
+        if res.success:
+            self.update_cur_state_from_array(res['x'])
+            x = self.get_cur_state_array()
+            print(self.const(x))
+            return True
+        else:
+            return False
+
+    def update_state2(self):
+        '''
+
+        :return: True/False to indicate convergance
+        '''
+        x = self.get_cur_state_array()
+        res = minimize(self.const, x, method='L-BFGS-B',jac=self.const_deriv)
         if res.success:
             self.update_cur_state_from_array(res['x'])
             x = self.get_cur_state_array()
