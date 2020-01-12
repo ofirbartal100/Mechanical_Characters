@@ -84,6 +84,34 @@ class Assembly:
 
         return assembly_const, param_index
 
+
+    def get_assembly_constraint2(self):
+        """
+        generates a master constraint that can be optimized via Newton Raphson
+        :param connection_list:
+        :return: the constrain describing the whole assemply
+                and the index (dict(param:position)) of the params
+        """
+        param_index = {p: i for i, p in enumerate(self.free_params_in_assembly())}
+
+        def assembly_const(param_list):
+            """
+            :param param_list: list of parameters for each constraint
+                               must be ordered according to param_index
+            :return: sum of constraints parameterized with param_list
+            """
+            result = []
+            for i, con in enumerate(self.con_list):
+                connection_const_res = con.get_constraint()(
+                    *[param_list[param_index[p]] for p in con.get_free_params()])
+                # result += connection_const_res
+                result = result + connection_const_res
+                # self.plot_assembly()
+            return 0.5 * np.array(result) @ np.array(result)
+
+        return assembly_const, param_index
+
+
     def get_assembly_constraints_deriv(self):
         """
         generates a master constraint that can be optimized via Newton Raphson
