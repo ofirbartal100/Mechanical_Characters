@@ -274,8 +274,8 @@ class Assembly:
     def update_cur_state_from_array(self, new_state_array):
         for param, idx in self.param_index.items():
             self.cur_state[param] = new_state_array[idx]
-        for comp in self.components:
-            self.update_comp(comp)
+        for i, comp in enumerate(self.components):
+            self.components[i] = self.update_comp(comp)
 
     def get_state_from_array(self, state_array):
         state = {}
@@ -294,24 +294,20 @@ class Assembly:
         pass
 
     def update_comp(self, comp):
-        id = self.id
-        if (id, 'x') in self.cur_state:
-            comp.configuration.position.x = self.cur_state[(id, 'x')]
-        if (id, 'y') in self.cur_state:
-            comp.configuration.position.x = self.cur_state[(id, 'y')]
-        if (id, 'z') in self.cur_state:
-            comp.configuration.position.x = self.cur_state[(id, 'z')]
-        if (id, 'alpha') in self.cur_state:
-            comp.configuration.position.x = self.cur_state[(id, 'alpha')]
-        if (id, 'beta') in self.cur_state:
-            comp.configuration.position.x = self.cur_state[(id, 'beta')]
-        if (id, 'gamma') in self.cur_state:
-            comp.configuration.position.x = self.cur_state[(id, 'gamma')]
-
-
-
-
-
+        i = comp.id
+        if (i, 'x') in self.cur_state:
+            comp.configuration.position.x = self.cur_state[(i, 'x')]
+        if (i, 'y') in self.cur_state:
+            comp.configuration.position.y = self.cur_state[(i, 'y')]
+        if (i, 'z') in self.cur_state:
+            comp.configuration.position.z = self.cur_state[(i, 'z')]
+        if (i, 'alpha') in self.cur_state:
+            comp.configuration.alignment.alpha = self.cur_state[(i, 'alpha')]
+        if (i, 'beta') in self.cur_state:
+            comp.configuration.alignment.beta = self.cur_state[(i, 'beta')]
+        if (i, 'gamma') in self.cur_state:
+            comp.configuration.alignment.gamma = self.cur_state[(i, 'gamma')]
+        return comp
 
 def sample_radius_from_current(radius, diff_val=2, min_radius=0.1):
     if radius < 0.5:

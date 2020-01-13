@@ -32,4 +32,4 @@ def generate_random_curve(number_of_curves, number_of_points=360, curve_path=r'C
 
 
 if __name__ == "__main__":
-    generate_random_curve(*sys.argv[1:])
+    generate_random_curve(2)
