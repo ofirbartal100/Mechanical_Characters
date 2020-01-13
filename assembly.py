@@ -260,7 +260,7 @@ class Assembly:
         :return: True/False to indicate convergance
         '''
         x = self.get_cur_state_array()
-        res = minimize(self.const, x, method='L-BFGS-B',jac=self.const_deriv)
+        res = minimize(self.const, x, method='L-BFGS-B', jac=self.const_deriv)
         if res.success:
             self.update_cur_state_from_array(res['x'])
             print(res['fun'])
@@ -274,6 +274,8 @@ class Assembly:
     def update_cur_state_from_array(self, new_state_array):
         for param, idx in self.param_index.items():
             self.cur_state[param] = new_state_array[idx]
+        for comp in self.components:
+            self.update_comp(comp)
 
     def get_state_from_array(self, state_array):
         state = {}
@@ -290,6 +292,25 @@ class Assembly:
         :return: 3-dim position of the assembly red point in global axis
         """
         pass
+
+    def update_comp(self, comp):
+        id = self.id
+        if (id, 'x') in self.cur_state:
+            comp.configuration.position.x = self.cur_state[(id, 'x')]
+        if (id, 'y') in self.cur_state:
+            comp.configuration.position.x = self.cur_state[(id, 'y')]
+        if (id, 'z') in self.cur_state:
+            comp.configuration.position.x = self.cur_state[(id, 'z')]
+        if (id, 'alpha') in self.cur_state:
+            comp.configuration.position.x = self.cur_state[(id, 'alpha')]
+        if (id, 'beta') in self.cur_state:
+            comp.configuration.position.x = self.cur_state[(id, 'beta')]
+        if (id, 'gamma') in self.cur_state:
+            comp.configuration.position.x = self.cur_state[(id, 'gamma')]
+
+
+
+
 
 
 def sample_radius_from_current(radius, diff_val=2, min_radius=0.1):
