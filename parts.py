@@ -30,6 +30,10 @@ class Actuator(Gear):
         """
         self.configuration.rotate_alpha(angle)
 
+    def get_state(self):
+        state_dic = {(self.id, 'alpha'): self.configuration.alignment.get_alpha()}
+        return state_dic
+
 
 class Stick(Component):
     """

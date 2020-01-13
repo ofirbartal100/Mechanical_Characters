@@ -45,6 +45,15 @@ class Alignment:
     def __str__(self):
         return str(self.vector())
 
+    def get_alpha(self):
+        return np.rad2deg(self.alpha)
+
+    def get_beta(self):
+        return np.rad2deg(self.beta)
+
+    def get_gamma(self):
+        return np.rad2deg(self.gamma)
+
 class Configuration:
     def __init__(self, position, alignment):
         """

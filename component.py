@@ -41,6 +41,18 @@ class Component(ABC):
 
         return self.local_vector_to_global(local_position)
 
+    def get_state(self):
+        pos = self.configuration.position
+        align = self.configuration.alignment
+        cid = self.id
+        state_dict = {(cid, 'x'):pos.x,
+                      (cid, 'y'):pos.y,
+                      (cid, 'z'):pos.z,
+                      (cid, 'alpha'):align.get_alpha(),
+                      (cid, 'beta'):align.get_beta(),
+                      (cid, 'gamma'):align.get_gamma()}
+        return state_dict
+
     def local_vector_to_global(self, vec):
         """
         rotates and translates a local vector to it's global position

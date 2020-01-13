@@ -13,6 +13,10 @@ gear1 = Gear(radius=20)
 gear2 = Gear(radius=6)
 stick1 = Stick(length=40)
 stick2 = Stick(length=100)
+
+print(gear1.get_state())
+print(stick1.get_state())
+print(actuator.get_state())
 # 1 1 5 5 6(5) 6(5) 6(5)
 t = time.time()
 # assembly = Assembly([PhaseConnection(actuator, gear1),
