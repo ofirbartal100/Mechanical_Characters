@@ -30,6 +30,9 @@ class Actuator(Gear):
         """
         self.configuration.rotate_alpha(angle)
 
+    def get_phase(self):
+        return self.configuration.alignment.alpha
+
 
 class Stick(Component):
     """

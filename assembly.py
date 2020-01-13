@@ -22,11 +22,12 @@ def describe_comp(comp):
 class Assembly:
     id_counter = 0
 
-    def __init__(self, connection_list, components, iters=100, tol=1e-4, plot_newt=False):
+    def __init__(self, connection_list, components, actuator=None ,iters=100, tol=1e-4, plot_newt=False):
         self.components = components
         self.con_list = connection_list
         self.iterations = iters
         self.tolerance = tol
+        self.actuator = actuator
         # self.const, self.param_index = self.get_assembly_constraint()
         self.const, self.param_index = self.get_assembly_constraint2()
         # self.const_deriv = self.get_assembly_constraints_deriv()
@@ -37,7 +38,8 @@ class Assembly:
         # make sure the assembly is valid
         # if not self.update_state():
         if not self.update_state2():
-            raise Exception("assembly failed to init")
+            print("Failed")
+            # raise Exception("assembly failed to init")
         self.id = Assembly.id_counter
         Assembly.id_counter += 1
 
@@ -110,6 +112,7 @@ class Assembly:
                 # result += connection_const_res
                 result = result + connection_const_res
                 # self.plot_assembly()
+            self.C = np.array(result)
             return 0.5 * np.array(result) @ np.array(result)
 
         return assembly_const, self.param_index
@@ -129,15 +132,32 @@ class Assembly:
                                must be ordered according to param_index
             :return: sum of constraints parameterized with param_list
             """
-            res = np.zeros(len(self.param_index))
+            doCdoSt = np.zeros((len(self.C),len(self.param_index)))
+            row = 0
             for i, con in enumerate(self.con_list):
                 gradient = con.get_constraint_prime_by_the_book()[0](*[param_list[self.param_index[p]] for p in con.get_free_params()])
-                C = con.get_constraint_by_the_book()[0](*[param_list[self.param_index[p]] for p in con.get_free_params()])
-                local_grad = np.array(C) @ gradient
-                for j,p in enumerate(con.get_free_params()):
-                    res[self.param_index[p]] += local_grad[j]
+                gradient = np.array(gradient)
+                # 1D
+                if gradient.size == gradient.shape[0]:
+                    for j,p in enumerate(con.get_free_params()):
+                        doCdoSt[row,self.param_index[p]] = gradient[j]
+                    row += 1
 
-            return res
+                else:
+                    for l in range(gradient.shape[0]):
+                        for j,p in enumerate(con.get_free_params()):
+                            doCdoSt[row+l,self.param_index[p]] = gradient[l,j]
+                    row += gradient.shape[0]
+
+                # C = con.get_constraint_by_the_book()[0](*[param_list[self.param_index[p]] for p in con.get_free_params()])
+                # if len(C) > 1:
+                #     local_grad = np.array(C) @ gradient
+                # else:
+                #     local_grad = np.array(C) * gradient
+                # for j,p in enumerate(con.get_free_params()):
+                #     res[self.param_index[p]] += local_grad[j]
+
+            return self.C @ doCdoSt
 
 
         return assembly_const_deriv
@@ -243,10 +263,12 @@ class Assembly:
         res = minimize(self.const, x, method='L-BFGS-B',jac=self.const_deriv)
         if res.success:
             self.update_cur_state_from_array(res['x'])
-            x = self.get_cur_state_array()
-            print(self.const(x))
+            print(res['fun'])
             return True
         else:
+            if x.mean() == 0:
+                self.update_cur_state_from_array(res['x'])
+            print('False')
             return False
 
     def update_cur_state_from_array(self, new_state_array):
@@ -382,8 +404,9 @@ def get_assembly_curve(assembly, number_of_points=360):
     actuator = assembly.actuator
     for i in range(number_of_points):
         actuator.turn(360 / number_of_points)
-        assembly.update_state()
-        assembly_curve.append(assembly.get_red_point_position())
+        if assembly.update_state2():
+            assembly.plot_assembly()
+        # assembly_curve.append(assembly.get_red_point_position())
     return assembly_curve
 
 

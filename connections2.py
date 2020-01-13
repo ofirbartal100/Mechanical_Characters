@@ -109,8 +109,8 @@ class PinConnection2(Connection2):
             r0z = R.from_euler('z', a0).as_matrix()
             r0yz = R.from_euler('yz', [b0, a0]).as_matrix()
 
-            r0doa0 = np.array([[-np.sin(a0), np.cos(a0), 0],
-                               [-np.cos(a0), -np.sin(a0), 0],
+            r0doa0 = np.array([[-np.sin(a0), -np.cos(a0), 0],
+                               [np.cos(a0), -np.sin(a0), 0],
                                [0, 0, 0]])
 
             r0dob0 = np.array([[-np.sin(b0), 0, np.cos(b0)],
@@ -118,8 +118,8 @@ class PinConnection2(Connection2):
                                [-np.cos(b0), 0, -np.sin(b0)]])
 
             r0doc0 = np.array([[0, 0, 0],
-                               [0, -np.sin(c0), np.cos(c0)],
-                               [0, -np.cos(c0), -np.sin(c0)]])
+                               [0, -np.sin(c0), -np.cos(c0)],
+                               [0, np.cos(c0), -np.sin(c0)]])
 
             doa0 = (r0xy @ r0doa0) @ self.joint1
             dob0 = (r0x @ r0dob0 @ r0z) @ self.joint1
@@ -131,8 +131,8 @@ class PinConnection2(Connection2):
             r1z = R.from_euler('z', a1).as_matrix()
             r1yz = R.from_euler('yz', [b1, a1]).as_matrix()
 
-            r1doa1 = np.array([[-np.sin(a1), np.cos(a1), 0],
-                               [-np.cos(a1), -np.sin(a1), 0],
+            r1doa1 = np.array([[-np.sin(a1), -np.cos(a1), 0],
+                               [np.cos(a1), -np.sin(a1), 0],
                                [0, 0, 0]])
 
             r1dob1 = np.array([[-np.sin(b1), 0, np.cos(b1)],
@@ -140,8 +140,8 @@ class PinConnection2(Connection2):
                                [-np.cos(b1), 0, -np.sin(b1)]])
 
             r1doc1 = np.array([[0, 0, 0],
-                               [0, -np.sin(c1), np.cos(c1)],
-                               [0, -np.cos(c1), -np.sin(c1)]])
+                               [0, -np.sin(c1), -np.cos(c1)],
+                               [0, np.cos(c1), -np.sin(c1)]])
 
             doa1 = (r1xy @ r1doa1) @ self.joint2
             dob1 = (r1x @ r1dob1 @ r1z) @ self.joint2
@@ -159,18 +159,23 @@ class PinConnection2(Connection2):
 
 
             deriv = np.zeros((6, 12))
-            deriv[0, :] = np.array([1, 0, 0, dob0[0], doc0[0], doa0[0],
-                                    -1, 0, 0, -doa1[0], -dob1[0], -doc1[0]])
-            deriv[1, :] = np.array([0, 1, 0, dob0[1], doc0[1], doa0[1],
-                                    0, -1, 0, -doa1[1], -dob1[1], -doc1[1]])
-            deriv[2, :] = np.array([0, 0, 1, dob0[2], doc0[2], doa0[2],
-                                    0, 0, -1, -doa1[2], -dob1[2], -doc1[2]])
-            deriv[3, :] = np.array([0, 0, 0, Vdoa0[0], Vdob0[0], Vdoc0[0],
-                                    0, 0, 0, -Vdoa1[0], -Vdob1[0], -Vdoc1[0]])
-            deriv[4, :] = np.array([0, 0, 0, Vdoa0[1], Vdob0[1], Vdoc0[0],
-                                    0, 0, 0, -Vdoa1[1], -Vdob1[1], -Vdoc1[1]])
-            deriv[5, :] = np.array([0, 0, 0, Vdoa0[2], Vdob0[2], Vdoc0[0],
-                                    0, 0, 0, -Vdoa1[2], -Vdob1[2], -Vdoc1[2]])
+            deriv[0, :] = np.array([1, 0, 0, doc0[0], dob0[0], doa0[0],
+                                    -1, 0, 0, -doc1[0], -dob1[0], -doa1[0]])
+
+            deriv[1, :] = np.array([0, 1, 0, doc0[1], dob0[1], doa0[1],
+                                    0, -1, 0, -doc1[1], -dob1[1], -doa1[1]])
+
+            deriv[2, :] = np.array([0, 0, 1, doc0[2], dob0[2], doa0[2],
+                                    0, 0, -1, -doc1[2], -dob1[2], -doa1[2]])
+
+            deriv[3, :] = np.array([0, 0, 0, Vdoc0[0], Vdob0[0], Vdoa0[0],
+                                    0, 0, 0, -Vdoc1[0], -Vdob1[0], -Vdoa1[0]])
+
+            deriv[4, :] = np.array([0, 0, 0, Vdoc0[1], Vdob0[1], Vdoa0[1],
+                                    0, 0, 0, -Vdoc1[1], -Vdob1[1], -Vdoa1[1]])
+
+            deriv[5, :] = np.array([0, 0, 0, Vdoc0[2], Vdob0[2], Vdoa0[2],
+                                    0, 0, 0, -Vdoc1[2], -Vdob1[2], -Vdoa1[2]])
             return deriv
 
         return const_prime, self.params
@@ -209,7 +214,7 @@ class PhaseConnection2(Connection2):
 
     def get_constraint_by_the_book(self):
         # should get 12 state variables
-        def const(x0, y0, z0, a0, b0, c0, x1, y1, z1, a1, b1, c1):
+        def const(x0, y0, z0, c0, b0, a0, x1, y1, z1, c1, b1, a1):
             # self.gear1.apply_state(x0, y0, z0, a0, b0, c0)
             # self.gear2.apply_state(x1, y1, z1, a1, b1, c1)
             r = self.gear2.num_of_teeth / self.gear1.num_of_teeth
@@ -217,7 +222,7 @@ class PhaseConnection2(Connection2):
             return [a0 - r * (a1 + self.phase_diff)]
 
         # should get 6 state variables
-        def const_with_actuator(x0, y0, z0, a0, b0, c0):
+        def const_with_actuator(x0, y0, z0, c0, b0, a0):
             return [a0 - self.actuator.get_phase()]
 
         if self.actuator:
@@ -227,14 +232,14 @@ class PhaseConnection2(Connection2):
 
     # needs to multiply every partial derivative by get_constraint_by_the_book when calculating overall derive
     def get_constraint_prime_by_the_book(self):
-        def const_prime(x0, y0, z0, a0, b0, c0, x1, y1, z1, a1, b1, c1):
+        def const_prime(x0, y0, z0, c0, b0, a0, x1, y1, z1, c1, b1, a1):
             r = self.gear2.num_of_teeth / self.gear1.num_of_teeth
-            return [0, 0, 0, 1, 0, 0, 0, 0, 0, -r, 0, 0]
+            return [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, -r]
 
-        def const_prime_with_actuator(x0, y0, z0, a0, b0, c0):
-            return [0, 0, 0, 1, 0, 0]
+        def const_prime_with_actuator(x0, y0, z0, c0, b0, a0):
+            return [0, 0, 0, 0, 0, 1]
 
-        if self.with_actuator:
+        if self.actuator:
             return const_prime_with_actuator, self.params
         else:
             return const_prime, self.params
@@ -266,17 +271,17 @@ class FixedConnection2(Connection2):
 
     def get_constraint_by_the_book(self):
         # should get 12 state variables
-        def const(x0, y0, z0, a0, b0, c0):
+        def const(x0, y0, z0, c0, b0, a0):
             # self.comp.apply_state(x0, y0, z0, a0, b0, c0)
             X = np.array([x0, y0, z0]) - self.fixed_position
-            V = np.array([a0, b0, c0]) - self.fixed_orientation
+            V = np.array([c0, b0, a0]) - self.fixed_orientation
             return [*X, *V]
 
         return const, self.params
 
     # needs to multiply every partial derivative by get_constraint_by_the_book when calculating overall derive
     def get_constraint_prime_by_the_book(self):
-        def const_prime(x0, y0, z0, a0, b0, c0):
+        def const_prime(x0, y0, z0, c0, b0, a0):
             return np.eye(6)
 
         return const_prime, self.params
