@@ -108,7 +108,13 @@ class PinConnection(Connection):
             joint_dist_const = (new_joint_global_location1 - new_joint_global_location2) ** 2
             rotation_axis_const = (new_rotation_axis1_orientation - new_rotation_axis2_orientation) ** 2
 
-            return sum(joint_dist_const + rotation_axis_const)
+            return [joint_dist_const[0],
+                    joint_dist_const[1],
+                    joint_dist_const[2],
+                    rotation_axis_const[0],
+                    rotation_axis_const[1],
+                    rotation_axis_const[2],
+                    ]
 
         return const
 
@@ -165,10 +171,11 @@ class PinConnection(Connection):
 
 class PhaseConnection(Connection):
 
-    def __init__(self, gear1, gear2):
+    def __init__(self, gear1, gear2, phase_diff=0):
         Connection.__init__(self)
         self.gear1 = gear1
         self.gear2 = gear2
+        self.phase_diff = phase_diff
         self.actuator = None
         if self.gear1.radius == 0:
             self.actuator = self.gear1
@@ -187,7 +194,7 @@ class PhaseConnection(Connection):
             def const(alpha1):
                 self.params[(self.gear1.id, 'alpha')] = alpha1
                 self.gear1.rotate(Alignment(0, 0, alpha1))
-                return (alpha1 - self.actuator.get_alignment().alpha) ** 2
+                return [(alpha1 - self.actuator.get_alignment().alpha) ** 2]
 
             return const
         else:
@@ -196,7 +203,7 @@ class PhaseConnection(Connection):
                 self.params[(self.gear2.id, 'alpha')] = alpha2
                 self.gear1.set_alpha(alpha1)
                 self.gear2.set_alpha(alpha2)
-                return (alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2)) ** 2
+                return [(alpha1 - self.gear1.get_phase_func(self.gear2)(alpha2) + self.phase_diff) ** 2]
 
             return const
 
@@ -260,12 +267,23 @@ class FixedConnection(Connection):
             res = 0
             # position constraint
             res += ((np.array([positionx, positiony, positionz]) - self.fixed_position.vector()) ** 2).sum()
+            xyz = ((np.array([positionx, positiony, positionz]) - self.fixed_position.vector()) ** 2)
             # angle constraints
             res += (gamma - self.fixed_orientation.gamma) ** 2
             res += (beta - self.fixed_orientation.beta) ** 2
             if self.fix_alpha:
                 res += (alpha - self.fixed_orientation.alpha) ** 2
-            return res
+                return [xyz[0],
+                        xyz[1],
+                        xyz[2],
+                        (gamma - self.fixed_orientation.gamma) ** 2,
+                        (beta - self.fixed_orientation.beta) ** 2,
+                        (alpha - self.fixed_orientation.alpha) ** 2]
+            return [xyz[0],
+                    xyz[1],
+                    xyz[2],
+                    (gamma - self.fixed_orientation.gamma) ** 2,
+                    (beta - self.fixed_orientation.beta) ** 2]
 
         return const
 

@@ -1,3 +1,5 @@
+import json
+
 from assembly import *
 
 a = return_prototype()

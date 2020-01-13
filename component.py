@@ -21,7 +21,7 @@ class Component(ABC):
 
     def get_global_orientation(self, local_alignment):
         """
-        get global orientation in Euler angles
+        get global orientation in Euler angles degrees
         :param local_alignment: an Alignment object or vector of eurler angles
         :return: rotated Alignment object
         """
