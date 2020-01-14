@@ -217,7 +217,7 @@ class PhaseConnection2(Connection2):
         def const(x0, y0, z0, c0, b0, a0, x1, y1, z1, c1, b1, a1):
             # self.gear1.apply_state(x0, y0, z0, a0, b0, c0)
             # self.gear2.apply_state(x1, y1, z1, a1, b1, c1)
-            r = self.gear2.num_of_teeth / self.gear1.num_of_teeth
+            r = self.gear2.radius / self.gear1.radius
 
             return [a0 - r * (a1 + self.phase_diff)]
 
@@ -233,7 +233,7 @@ class PhaseConnection2(Connection2):
     # needs to multiply every partial derivative by get_constraint_by_the_book when calculating overall derive
     def get_constraint_prime_by_the_book(self):
         def const_prime(x0, y0, z0, c0, b0, a0, x1, y1, z1, c1, b1, a1):
-            r = self.gear2.num_of_teeth / self.gear1.num_of_teeth
+            r = self.gear2.radius / self.gear1.radius
             return [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, -r]
 
         def const_prime_with_actuator(x0, y0, z0, c0, b0, a0):
