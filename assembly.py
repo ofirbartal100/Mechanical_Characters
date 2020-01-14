@@ -8,8 +8,7 @@ from matplotlib import pyplot as plt
 import time
 import random
 from configuration import *
-import json
-import os
+
 
 def describe_comp(comp):
     comp_desc = {'type': str(type(comp)).split(".")[1].split("'")[0],
@@ -23,19 +22,24 @@ def describe_comp(comp):
 class Assembly:
     id_counter = 0
 
-    def __init__(self, connection_list, components, iters=100, tol=1e-4, plot_newt=False):
+    def __init__(self, connection_list, components, actuator=None ,iters=100, tol=1e-4, plot_newt=False):
         self.components = components
         self.con_list = connection_list
         self.iterations = iters
         self.tolerance = tol
-        self.const, self.param_index = self.get_assembly_constraint()
-        self.const_deriv = self.get_assembly_constraints_deriv()
+        self.actuator = actuator
+        # self.const, self.param_index = self.get_assembly_constraint()
+        self.const, self.param_index = self.get_assembly_constraint2()
+        # self.const_deriv = self.get_assembly_constraints_deriv()
+        self.const_deriv = self.get_assembly_constraints_deriv2()
         self.cur_state = self.free_params_in_assembly()
         self.plot_newt = plot_newt
 
         # make sure the assembly is valid
-        if not self.update_state():
-            raise Exception("assembly failed to init")
+        # if not self.update_state():
+        if not self.update_state2():
+            print("Failed")
+            # raise Exception("assembly failed to init")
         self.id = Assembly.id_counter
         Assembly.id_counter += 1
 
@@ -84,6 +88,79 @@ class Assembly:
             return sum(result)
 
         return assembly_const, param_index
+
+
+    def get_assembly_constraint2(self):
+        """
+        generates a master constraint that can be optimized via Newton Raphson
+        :param connection_list:
+        :return: the constrain describing the whole assemply
+                and the index (dict(param:position)) of the params
+        """
+        self.param_index = {p: i for i, p in enumerate(self.free_params_in_assembly())}
+
+        def assembly_const(param_list):
+            """
+            :param param_list: list of parameters for each constraint
+                               must be ordered according to param_index
+            :return: sum of constraints parameterized with param_list
+            """
+            result = []
+            for i, con in enumerate(self.con_list):
+                connection_const_res = con.get_constraint_by_the_book()[0](
+                    *[param_list[self.param_index [p]] for p in con.get_free_params()])
+                # result += connection_const_res
+                result = result + connection_const_res
+                # self.plot_assembly()
+            self.C = np.array(result)
+            return 0.5 * np.array(result) @ np.array(result)
+
+        return assembly_const, self.param_index
+
+
+    def get_assembly_constraints_deriv2(self):
+        """
+        generates a master constraint that can be optimized via Newton Raphson
+        :param connection_list:
+        :return: the constrain describing the whole assemply
+                and the index (dict(param:position)) of the params
+        """
+
+        def assembly_const_deriv(param_list):
+            """
+            :param param_list: list of parameters for each constraint
+                               must be ordered according to param_index
+            :return: sum of constraints parameterized with param_list
+            """
+            doCdoSt = np.zeros((len(self.C),len(self.param_index)))
+            row = 0
+            for i, con in enumerate(self.con_list):
+                gradient = con.get_constraint_prime_by_the_book()[0](*[param_list[self.param_index[p]] for p in con.get_free_params()])
+                gradient = np.array(gradient)
+                # 1D
+                if gradient.size == gradient.shape[0]:
+                    for j,p in enumerate(con.get_free_params()):
+                        doCdoSt[row,self.param_index[p]] = gradient[j]
+                    row += 1
+
+                else:
+                    for l in range(gradient.shape[0]):
+                        for j,p in enumerate(con.get_free_params()):
+                            doCdoSt[row+l,self.param_index[p]] = gradient[l,j]
+                    row += gradient.shape[0]
+
+                # C = con.get_constraint_by_the_book()[0](*[param_list[self.param_index[p]] for p in con.get_free_params()])
+                # if len(C) > 1:
+                #     local_grad = np.array(C) @ gradient
+                # else:
+                #     local_grad = np.array(C) * gradient
+                # for j,p in enumerate(con.get_free_params()):
+                #     res[self.param_index[p]] += local_grad[j]
+
+            return self.C @ doCdoSt
+
+
+        return assembly_const_deriv
 
     def get_assembly_constraints_deriv(self):
         """
@@ -177,9 +254,28 @@ class Assembly:
         else:
             return False
 
+    def update_state2(self):
+        '''
+
+        :return: True/False to indicate convergance
+        '''
+        x = self.get_cur_state_array()
+        res = minimize(self.const, x, method='L-BFGS-B', jac=self.const_deriv)
+        if res.success:
+            self.update_cur_state_from_array(res['x'])
+            print(res['fun'])
+            return True
+        else:
+            if x.mean() == 0:
+                self.update_cur_state_from_array(res['x'])
+            print('False')
+            return False
+
     def update_cur_state_from_array(self, new_state_array):
         for param, idx in self.param_index.items():
             self.cur_state[param] = new_state_array[idx]
+        for i, comp in enumerate(self.components):
+            self.components[i] = self.update_comp(comp)
 
     def get_state_from_array(self, state_array):
         state = {}
@@ -197,6 +293,21 @@ class Assembly:
         """
         pass
 
+    def update_comp(self, comp):
+        i = comp.id
+        if (i, 'x') in self.cur_state:
+            comp.configuration.position.x = self.cur_state[(i, 'x')]
+        if (i, 'y') in self.cur_state:
+            comp.configuration.position.y = self.cur_state[(i, 'y')]
+        if (i, 'z') in self.cur_state:
+            comp.configuration.position.z = self.cur_state[(i, 'z')]
+        if (i, 'alpha') in self.cur_state:
+            comp.configuration.alignment.alpha = self.cur_state[(i, 'alpha')]
+        if (i, 'beta') in self.cur_state:
+            comp.configuration.alignment.beta = self.cur_state[(i, 'beta')]
+        if (i, 'gamma') in self.cur_state:
+            comp.configuration.alignment.gamma = self.cur_state[(i, 'gamma')]
+        return comp
 
 def sample_radius_from_current(radius, diff_val=2, min_radius=0.1):
     if radius < 0.5:
@@ -327,8 +438,11 @@ def get_assembly_curve(assembly, number_of_points= 360):
     actuator = assembly.actuator
     for i in range(number_of_points):
         actuator.turn(360 / number_of_points)
-        assembly.update_state()
-        assembly_curve.append(assembly.get_red_point_position())
+        #assembly.update_state()
+        #assembly_curve.append(assembly.get_red_point_position())
+        if assembly.update_state2():
+            assembly.plot_assembly()
+        # assembly_curve.append(assembly.get_red_point_position())
     return assembly_curve
 
 

@@ -169,6 +169,7 @@ class PinConnection(Connection):
         return const_prime
 
 
+# dont use! we dont bind 2 gears together
 class PhaseConnection(Connection):
 
     def __init__(self, gear1, gear2, phase_diff=0):
