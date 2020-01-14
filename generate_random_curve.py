@@ -67,7 +67,7 @@ def generate_random_curve2(number_of_curves, number_of_points=360, curve_path=r'
 #     generate_random_curve(*sys.argv[1:])
 
 
-generate_random_curve(5 , number_of_points=10 , curve_path = r'C:\Users\A\Desktop\temp\outputs', \
+generate_random_curve(1 , number_of_points=10 , curve_path = r'C:\Users\ofir\Desktop\curve_temp\outputs', \
                       gear_diff_val=1, stick_diff_val=2, position_diff_val=1, save_images = True)
 
 

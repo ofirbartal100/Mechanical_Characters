@@ -30,6 +30,13 @@ class Actuator(Gear):
         """
         self.configuration.rotate_alpha(angle)
 
+    def set(self, angle):
+        """
+        set actuator a specified amount angle
+        :param angle: number of rotations to perform. i.e. 0.5 is 180 deg, 1=360, 2=720
+        """
+        self.configuration.alignment.alpha = np.deg2rad(angle)
+
     def get_phase(self):
         return self.configuration.alignment.alpha
 

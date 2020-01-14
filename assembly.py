@@ -35,8 +35,8 @@ class Assembly:
 
         # make sure the assembly is valid
         # if not self.update_state():
-        if not self.update_state2():
-            print("Failed")
+        # if not self.update_state2():
+        #     print("Failed")
             # raise Exception("assembly failed to init")
         self.id = Assembly.id_counter
         Assembly.id_counter += 1
@@ -250,7 +250,7 @@ class Assembly:
         if res.success:
             self.update_cur_state_from_array(res['x'])
             x = self.get_cur_state_array()
-            print(self.const(x))
+            # print(self.const(x))
             return True
         else:
             return False
@@ -264,13 +264,27 @@ class Assembly:
         res = minimize(self.const, x, method='L-BFGS-B', jac=self.const_deriv)
         if res.success:
             self.update_cur_state_from_array(res['x'])
-            #print(res['fun'])
             return True
         else:
+            # change starting guess
             if x.mean() == 0:
                 self.update_cur_state_from_array(res['x'])
-            print('False')
             return False
+
+    def update_state3(self,x0=None):
+        '''
+
+        :return: True/False to indicate convergance
+        '''
+        if x0 is None:
+            x0 = self.get_cur_state_array()
+        res = minimize(self.const, x0, method='L-BFGS-B', jac=self.const_deriv)
+        if res.success:
+            # self.update_cur_state_from_array(res['x'])
+            return res['x']
+        else:
+            return None
+
 
     def update_cur_state_from_array(self, new_state_array):
         for param, idx in self.param_index.items():
@@ -396,13 +410,13 @@ def is_vaild_assembleA(assemblyA):
 
 
     if config["stick1_init_parameters"]["length"] < config["stick1_stick2_joint_location"][0]:
-        print(
-            f"stick length {config['stick1_init_parameters']['length']} and joint location is in {config['stick1_stick2_joint_location'][0]}")
+        # print(
+        #     f"stick length {config['stick1_init_parameters']['length']} and joint location is in {config['stick1_stick2_joint_location'][0]}")
         return False
 
     if config["stick2_init_parameters"]['length'] < config["stick2_stick1_joint_location"][0]:
-        print(
-            f"stick length {config['stick2_init_parameters']['length']} and joint location is in {config['stick2_stick1_joint_location'][0]}")
+        # print(
+        #     f"stick length {config['stick2_init_parameters']['length']} and joint location is in {config['stick2_stick1_joint_location'][0]}")
 
         return False
 
@@ -411,16 +425,16 @@ def is_vaild_assembleA(assemblyA):
     radius1 = config["gear1_init_parameters"]["radius"]
 
     if (joint_x1 - center_x1) ** 2 + (joint_y1 - center_y1) ** 2 > radius1 ** 2:
-        print(
-            f"center gear 1 {center_x1,center_y1} with radius {radius1} and joint location is in {joint_x1,joint_y1}")
+        # print(
+        #     f"center gear 1 {center_x1,center_y1} with radius {radius1} and joint location is in {joint_x1,joint_y1}")
         return False
 
     joint_x2, joint_y2 = config["gear2_stick2_joint_location"][:2]
     center_x2, center_y2 = (0,0)
     radius2 = config["gear2_init_parameters"]["radius"]
     if (joint_x2 - center_x2) ** 2 + (joint_y2 - center_y2) ** 2 > radius2 ** 2:
-        print(
-            f"center gear 2 {center_x2,center_y2} with radius {radius2} and joint location is in {joint_x2,joint_y2}")
+        # print(
+        #     f"center gear 2 {center_x2,center_y2} with radius {radius2} and joint location is in {joint_x2,joint_y2}")
         return False
 
     gears_dis = points_distance(config["gear1_fixed_position"],config["gear2_fixed_position"])
@@ -428,15 +442,15 @@ def is_vaild_assembleA(assemblyA):
     stick1_part_len = config["stick1_stick2_joint_location"][0]
 
     if (gears_dis + radius1 + radius2) >= stick2_len + stick1_part_len:
-        print(
-            f"gears distance is {gears_dis} with radius {radius1,radius2} and max length between sticks is {stick2_len+stick1_part_len}")
-        print("sticks too short")
+        # print(
+        #     f"gears distance is {gears_dis} with radius {radius1,radius2} and max length between sticks is {stick2_len+stick1_part_len}")
+        # print("sticks too short")
         return False
 
     if gears_dis - radius1 + stick1_part_len < stick2_len:
-        print(
-            f"gears distance is {gears_dis} with radius1 {radius1} and stick1 len is {stick1_part_len} and stick2 len {stick2_len}")
-        print("sticks too long")
+        # print(
+        #     f"gears distance is {gears_dis} with radius1 {radius1} and stick1 len is {stick1_part_len} and stick2 len {stick2_len}")
+        # print("sticks too long")
         return False
     # except Exception as e:
     # print(f"error = {e}")
@@ -450,11 +464,38 @@ def get_assembly_curve(assembly, number_of_points= 360,plot_path = None,save_ima
     actuator = assembly.actuator
     for i in range(number_of_points):
         actuator.turn(360 / number_of_points)
-        #assembly.update_state()
-        if assembly.update_state2():
-            assembly.plot_assembly(plot_path =plot_path , image_number = i,save_images = save_images)
+        result = assembly.update_state2()
+        if result:
             assembly_curve.append(assembly.get_red_point_position())
+            if plot_path:
+                assembly.plot_assembly(plot_path =plot_path , image_number = i,save_images = save_images)
     return assembly_curve
+
+
+
+def get_assembly_curve_parallel(assembly, number_of_points= 360):
+    import multiprocessing
+    from joblib import Parallel, delayed
+    num_cores = multiprocessing.cpu_count()
+    import time
+
+    def f(i,orig):
+        # cpy = AssemblyA(orig.config)
+        orig.actuator.set(i*(360.0 / number_of_points))
+        result = orig.update_state2()
+        if result:
+            return orig.get_red_point_position()
+        return [0,0,i*(360.0 / number_of_points)]
+
+    # print("started")
+    start = time.time()
+    # x0 = assembly.update_state3()
+    # assembly_curve = Parallel(n_jobs=num_cores)(delayed(f)(i, assembly) for i in range(number_of_points))
+    assembly_curve = [f(i, assembly) for i in range(number_of_points)]
+    end =time.time()
+    # print(end-start)
+    return assembly_curve
+
 
 
 def ofir_score(curve1, curve2):
@@ -517,7 +558,15 @@ def return_prototype():
 def create_assemblyA(gear_diff_val = 1, stick_diff_val = 1, position_diff_val = 1):
     new_assembly = sample_from_cur_assemblyA(return_prototype(),gear_diff_val = gear_diff_val, stick_diff_val = stick_diff_val, position_diff_val = position_diff_val)
     while not is_vaild_assembleA(new_assembly):
-        print("not valid assembly")
+        # print("not valid assembly")
+        new_assembly = sample_from_cur_assemblyA(return_prototype())
+    return new_assembly
+
+
+def create_random_assembly_A(gear_diff_val = 1, stick_diff_val = 1, position_diff_val = 1):
+    new_assembly = sample_from_cur_assemblyA(return_prototype(),gear_diff_val = gear_diff_val, stick_diff_val = stick_diff_val, position_diff_val = position_diff_val)
+    while not is_vaild_assembleA(new_assembly):
+        # print("not valid assembly")
         new_assembly = sample_from_cur_assemblyA(return_prototype())
     return new_assembly
 
@@ -537,11 +586,11 @@ class AssemblyA_Sampler:
         for i in range(num_of_samples_around):
             new_assemblyA = sample_from_cur_assemblyA(assemblyA)
             if is_vaild_assembleA(new_assemblyA):
-                print("valid assembly!")
+                # print("valid assembly!")
                 assembly_curve = get_assembly_curve(new_assemblyA, number_of_points=self.number_of_points)
                 # assembly_curve = [1]
                 if is_dissimilar(assembly_curve, self.curve_database):
-                    print("added assembly")
+                    # print("added assembly")
                     self.curve_database.append(assembly_curve)
                     accepted_assemblies.append(new_assemblyA)
 
@@ -552,7 +601,7 @@ class AssemblyA_Sampler:
         origin_curve = get_assembly_curve(origin_assembly, number_of_points=self.number_of_points)
 
         while not is_dissimilar(origin_curve, self.curve_database):
-            print("Origin assembly too similar to current assemblies")
+            # print("Origin assembly too similar to current assemblies")
             origin_assembly = create_assemblyA()
             origin_curve = get_assembly_curve(origin_assembly, number_of_points=self.number_of_points)
 
@@ -568,11 +617,11 @@ class AssemblyA_Sampler:
 
         origin_assembly, _ = self.get_origin_assembly()
 
-        print(f"origin_assembly initiaized")
-        print(f"curve_database is {self.curve_database}")
+        # print(f"origin_assembly initiaized")
+        # print(f"curve_database is {self.curve_database}")
 
         while len(self.database)-cur_database_len < min_samples_number:
-            print(f"current database size {len(self.database)}")
+            # print(f"current database size {len(self.database)}")
             accepted_assemblies = self.recursive_sample_assemblyA(origin_assembly,
                                                                   num_of_samples_around=num_of_samples_around)
             self.database += accepted_assemblies
