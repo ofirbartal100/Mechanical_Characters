@@ -5,12 +5,14 @@ from curve import Curve
 def normalize_curve(curve, anchor):
     return ([list(sample - anchor) for sample in curve])
 
-
+import time
 def generate_random_curve(number_of_points=360, gear_diff_val=1, stick_diff_val=1, position_diff_val=1):
     random_assembly_a = create_assemblyA(gear_diff_val=gear_diff_val, stick_diff_val=stick_diff_val, \
                                          position_diff_val=position_diff_val)
-
+    # start = time.time()
     assembly_curve = get_assembly_curve_parallel(random_assembly_a, number_of_points=number_of_points)
+    # end = time.time()
+    # print("phase 1 {}".format(end-start))
 
     assembly_curve = normalize_curve(assembly_curve, random_assembly_a.anchor)
 
@@ -21,4 +23,4 @@ def generate_random_curve(number_of_points=360, gear_diff_val=1, stick_diff_val=
 
 if __name__ == "__main__":
     # generate_random_curve(*sys.argv[1:])
-    generate_random_curve(number_of_points=10, gear_diff_val=1, stick_diff_val=2, position_diff_val=1)
+    generate_random_curve(number_of_points=76, gear_diff_val=1, stick_diff_val=2, position_diff_val=1)

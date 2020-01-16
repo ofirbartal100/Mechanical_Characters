@@ -255,13 +255,14 @@ class Assembly:
         else:
             return False
 
+
     def update_state2(self):
         '''
 
         :return: True/False to indicate convergance
         '''
         x = self.get_cur_state_array()
-        res = minimize(self.const, x, method='L-BFGS-B', jac=self.const_deriv)
+        res = minimize(self.const, x, method='BFGS', jac=self.const_deriv)
         if res.success:
             self.update_cur_state_from_array(res['x'])
             return True
@@ -270,20 +271,6 @@ class Assembly:
             if x.mean() == 0:
                 self.update_cur_state_from_array(res['x'])
             return False
-
-    def update_state3(self,x0=None):
-        '''
-
-        :return: True/False to indicate convergance
-        '''
-        if x0 is None:
-            x0 = self.get_cur_state_array()
-        res = minimize(self.const, x0, method='L-BFGS-B', jac=self.const_deriv)
-        if res.success:
-            # self.update_cur_state_from_array(res['x'])
-            return res['x']
-        else:
-            return None
 
 
     def update_cur_state_from_array(self, new_state_array):
