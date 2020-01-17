@@ -10,7 +10,7 @@ class Curve:
     '''
     this class represents a curve by its points and its features
     '''
-    A = np.array([0, 0, 0, 0, 0, 0, 0, 0], dtype=np.float64)
+    A = np.array([0.1212501165, 0.0005685005, 0, 1.640562057,0, 0.555359019205, 0.051260115736, 0], dtype=np.float64)
 
     def __init__(self, normalized_coordinates):
         self.features = np.zeros((6,), dtype=np.float64)
@@ -21,6 +21,7 @@ class Curve:
             self.points = normalized_coordinates
 
         self._calculate_features()
+        self._calculate_curvature()
 
     # def plot_curve(self):
     #     curve = Polygon(self.points)

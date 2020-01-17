@@ -1,5 +1,6 @@
 from parts import *
 from connections2 import *
+from curve import *
 from collections import defaultdict
 from scipy.optimize import minimize
 from matplotlib import pyplot as plt
@@ -328,9 +329,24 @@ def sample_length_from_current(length, diff_val=2, min_length=0.1):
     return round(max(min_length, length + random.uniform(-diff_val, diff_val)), 2)
 
 
-def sample_stick_parameters_from_current(stick_param, diff_val=2):
+def sample_stick_parameters_from_current(stick_param, diff_val=2,stick2_len_params = None):
+    if stick2_len_params:
+        radius1, radius2, gears_dis, stick1_part_len = stick2_len_params
+        min_val = gears_dis + radius1 + radius2-stick1_part_len
+        max_val = gears_dis - radius1 + stick1_part_len
+        if min_val<max_val:
+            # print(f"will sample from {min_val} to  {max_val}")
+            stick_param["length"] = round(
+                random.uniform(gears_dis + radius1 + radius2 - stick1_part_len, gears_dis - radius1 + stick1_part_len),
+                2)
+            return stick_param
+
     stick_param["length"] = round(sample_length_from_current(stick_param["length"], diff_val=diff_val), 2)
     return stick_param
+
+
+
+
 
 
 def sample_position(joint_location, diff_val=2, num_of_axis=3, enable_negative=True):
@@ -351,31 +367,48 @@ def sample_point(point, diff_val=2, num_of_axis=3):
     return Point(*vector)
 
 
-def sample_from_cur_assemblyA(assemblyA, gear_diff_val=0.5, stick_diff_val=0.5, position_diff_val=0.5):
+def sample_from_cur_assemblyA(assemblyA, gear_diff_val=0.5, stick_diff_val=0.5, position_diff_val=0.5, random_sample = 1):
     config = assemblyA.config
-    config["gear1_init_parameters"] = sample_gear_parameters_from_current(config["gear1_init_parameters"],
+
+
+    if random.random()<random_sample:
+        config["gear1_init_parameters"] = sample_gear_parameters_from_current(config["gear1_init_parameters"],
                                                                           gear_diff_val)
-    config["gear2_init_parameters"] = sample_gear_parameters_from_current(config["gear2_init_parameters"],
+    if random.random() < random_sample:
+        config["gear2_init_parameters"] = sample_gear_parameters_from_current(config["gear2_init_parameters"],
                                                                           gear_diff_val)
-    config["stick1_init_parameters"] = sample_stick_parameters_from_current(config["stick1_init_parameters"],
-                                                                             stick_diff_val)
-    config["stick2_init_parameters"] = sample_stick_parameters_from_current(config["stick2_init_parameters"],
+    if random.random() < random_sample:
+        config["stick1_init_parameters"] = sample_stick_parameters_from_current(config["stick1_init_parameters"],
                                                                              stick_diff_val)
 
-    config["gear1_stick1_joint_location"] = sample_position(config["gear1_stick1_joint_location"], position_diff_val,num_of_axis = 2)
-    config["gear2_stick2_joint_location"] = sample_position(config["gear2_stick2_joint_location"], position_diff_val,num_of_axis = 2)
+    if random.random() < random_sample:
+        config["gear1_stick1_joint_location"] = sample_position(config["gear1_stick1_joint_location"], position_diff_val,num_of_axis = 2)
 
-    config["stick1_stick2_joint_location"] = sample_position(config["stick1_stick2_joint_location"], position_diff_val, num_of_axis = 1, enable_negative = False)
-    config["stick2_stick1_joint_location"] = (config["stick2_init_parameters"]["length"],0,0)
+    if random.random() < random_sample:
+        config["gear2_stick2_joint_location"] = sample_position(config["gear2_stick2_joint_location"], position_diff_val,num_of_axis = 2)
+    if random.random() < random_sample:
+        config["stick1_stick2_joint_location"] = sample_position(config["stick1_stick2_joint_location"], position_diff_val, num_of_axis = 1, enable_negative = False)
+    if random.random() < random_sample:
+        config["stick2_stick1_joint_location"] = (config["stick2_init_parameters"]["length"],0,0)
 
     # for fixed :
     # config["gear1_fixed_position"] = sample_point(config["gear1_fixed_position"], position_diff_val, num_of_axis=1)
     # config["gear2_fixed_position"] = sample_point(config["gear2_fixed_position"], position_diff_val, num_of_axis=1)
 
     # for fixed2 :
-    config["gear1_fixed_position"] = sample_position(config["gear1_fixed_position"], position_diff_val, num_of_axis=2)
-    config["gear2_fixed_position"] = sample_position(config["gear2_fixed_position"], position_diff_val, num_of_axis=2)
+    if random.random() < random_sample:
+        config["gear1_fixed_position"] = sample_position(config["gear1_fixed_position"], position_diff_val, num_of_axis=2)
+    if random.random() < random_sample:
+        config["gear2_fixed_position"] = sample_position(config["gear2_fixed_position"], position_diff_val, num_of_axis=2)
+    if random.random() < random_sample:
+        radius1 = config["gear1_init_parameters"]["radius"]
+        radius2 = config["gear2_init_parameters"]["radius"]
+        gears_dis = points_distance(config["gear1_fixed_position"], config["gear2_fixed_position"])
+        stick1_part_len = config["stick1_stick2_joint_location"][0]
 
+        stick2_len_params = (radius1,radius2,gears_dis,stick1_part_len)
+        config["stick2_init_parameters"] = sample_stick_parameters_from_current(config["stick2_init_parameters"],
+                                                                            stick_diff_val, stick2_len_params)
     return AssemblyA(config)
 
 def points_distance (point1, point2):
@@ -397,13 +430,13 @@ def is_vaild_assembleA(assemblyA):
 
 
     if config["stick1_init_parameters"]["length"] < config["stick1_stick2_joint_location"][0]:
-        # print(
-        #     f"stick length {config['stick1_init_parameters']['length']} and joint location is in {config['stick1_stick2_joint_location'][0]}")
+        print(
+            f"stick length {config['stick1_init_parameters']['length']} and joint location is in {config['stick1_stick2_joint_location'][0]}")
         return False
 
     if config["stick2_init_parameters"]['length'] < config["stick2_stick1_joint_location"][0]:
-        # print(
-        #     f"stick length {config['stick2_init_parameters']['length']} and joint location is in {config['stick2_stick1_joint_location'][0]}")
+        print(
+            f"stick length {config['stick2_init_parameters']['length']} and joint location is in {config['stick2_stick1_joint_location'][0]}")
 
         return False
 
@@ -412,16 +445,16 @@ def is_vaild_assembleA(assemblyA):
     radius1 = config["gear1_init_parameters"]["radius"]
 
     if (joint_x1 - center_x1) ** 2 + (joint_y1 - center_y1) ** 2 > radius1 ** 2:
-        # print(
-        #     f"center gear 1 {center_x1,center_y1} with radius {radius1} and joint location is in {joint_x1,joint_y1}")
+        print(
+            f"center gear 1 {center_x1,center_y1} with radius {radius1} and joint location is in {joint_x1,joint_y1}")
         return False
 
     joint_x2, joint_y2 = config["gear2_stick2_joint_location"][:2]
     center_x2, center_y2 = (0,0)
     radius2 = config["gear2_init_parameters"]["radius"]
     if (joint_x2 - center_x2) ** 2 + (joint_y2 - center_y2) ** 2 > radius2 ** 2:
-        # print(
-        #     f"center gear 2 {center_x2,center_y2} with radius {radius2} and joint location is in {joint_x2,joint_y2}")
+        print(
+            f"center gear 2 {center_x2,center_y2} with radius {radius2} and joint location is in {joint_x2,joint_y2}")
         return False
 
     gears_dis = points_distance(config["gear1_fixed_position"],config["gear2_fixed_position"])
@@ -429,15 +462,15 @@ def is_vaild_assembleA(assemblyA):
     stick1_part_len = config["stick1_stick2_joint_location"][0]
 
     if (gears_dis + radius1 + radius2) >= stick2_len + stick1_part_len:
-        # print(
-        #     f"gears distance is {gears_dis} with radius {radius1,radius2} and max length between sticks is {stick2_len+stick1_part_len}")
-        # print("sticks too short")
+        print(
+            f"gears distance is {gears_dis} with radius {radius1,radius2} and max length between sticks is {stick2_len+stick1_part_len}")
+        print("sticks too short")
         return False
 
     if gears_dis - radius1 + stick1_part_len < stick2_len:
-        # print(
-        #     f"gears distance is {gears_dis} with radius1 {radius1} and stick1 len is {stick1_part_len} and stick2 len {stick2_len}")
-        # print("sticks too long")
+        print(
+            f"gears distance is {gears_dis} with radius1 {radius1} and stick1 len is {stick1_part_len} and stick2 len {stick2_len}")
+        print("sticks too long")
         return False
     # except Exception as e:
     # print(f"error = {e}")
@@ -446,7 +479,7 @@ def is_vaild_assembleA(assemblyA):
     return True
 
 
-def get_assembly_curve(assembly, number_of_points= 360,plot_path = None,save_images = False):
+def get_assembly_curve(assembly, number_of_points= 360,plot_path = None,save_images = False, normelaize_curve = False):
     assembly_curve = []
     actuator = assembly.actuator
     for i in range(number_of_points):
@@ -456,8 +489,7 @@ def get_assembly_curve(assembly, number_of_points= 360,plot_path = None,save_ima
             assembly_curve.append(assembly.get_red_point_position())
             if plot_path:
                 assembly.plot_assembly(plot_path =plot_path , image_number = i,save_images = save_images)
-    return assembly_curve
-
+    return Curve(normalize_curve(assembly_curve,assembly.anchor) if normelaize_curve else assembly_curve )
 
 
 def get_assembly_curve_parallel(assembly, number_of_points= 360):
@@ -481,20 +513,16 @@ def get_assembly_curve_parallel(assembly, number_of_points= 360):
     assembly_curve = [f(i, assembly) for i in range(number_of_points)]
     end =time.time()
     # print(end-start)
-    return assembly_curve
+    return Curve(assembly_curve)
 
 
-
-def ofir_score(curve1, curve2):
-    return 1.5
 
 
 def is_dissimilar(curve, database, gamma=1):
     for database_curve in database:
-        if ofir_score(curve, database_curve) < gamma:
+        if Curve.normA(curve, database_curve) < gamma:
             return False
     return True
-
 
 
 
@@ -543,24 +571,24 @@ def return_prototype():
     return AssemblyA(config)
 
 def create_assemblyA(gear_diff_val = 1, stick_diff_val = 1, position_diff_val = 1):
-    new_assembly = sample_from_cur_assemblyA(return_prototype(),gear_diff_val = gear_diff_val, stick_diff_val = stick_diff_val, position_diff_val = position_diff_val)
+    new_assembly = sample_from_cur_assemblyA(return_prototype(),gear_diff_val = gear_diff_val, stick_diff_val = stick_diff_val, position_diff_val = position_diff_val,random_sample=0.8)
     while not is_vaild_assembleA(new_assembly):
         # print("not valid assembly")
-        new_assembly = sample_from_cur_assemblyA(return_prototype())
+        new_assembly = sample_from_cur_assemblyA(return_prototype(),gear_diff_val = gear_diff_val, stick_diff_val = stick_diff_val, position_diff_val = position_diff_val,random_sample=0.8)
     return new_assembly
 
 
 def create_random_assembly_A(gear_diff_val = 1, stick_diff_val = 1, position_diff_val = 1):
-    new_assembly = sample_from_cur_assemblyA(return_prototype(),gear_diff_val = gear_diff_val, stick_diff_val = stick_diff_val, position_diff_val = position_diff_val)
+    new_assembly = sample_from_cur_assemblyA(return_prototype(),gear_diff_val = gear_diff_val, stick_diff_val = stick_diff_val, position_diff_val = position_diff_val,random_sample=0.8)
     while not is_vaild_assembleA(new_assembly):
         # print("not valid assembly")
-        new_assembly = sample_from_cur_assemblyA(return_prototype())
+        new_assembly = sample_from_cur_assemblyA(return_prototype(),gear_diff_val = gear_diff_val, stick_diff_val = stick_diff_val, position_diff_val = position_diff_val,random_sample=0.8)
     return new_assembly
 
 
 
 class AssemblyA_Sampler:
-    def __init__(self,number_of_points=3,num_of_samples_around=2):
+    def __init__(self,number_of_points=36,num_of_samples_around=10):
         self.database = []
         self.curve_database = []
         self.number_of_points = number_of_points
@@ -571,26 +599,30 @@ class AssemblyA_Sampler:
             num_of_samples_around = self.num_of_samples_around
         accepted_assemblies = []
         for i in range(num_of_samples_around):
-            new_assemblyA = sample_from_cur_assemblyA(assemblyA)
+            new_assemblyA = sample_from_cur_assemblyA(assemblyA,random_sample=0.5)
             if is_vaild_assembleA(new_assemblyA):
-                # print("valid assembly!")
-                assembly_curve = get_assembly_curve(new_assemblyA, number_of_points=self.number_of_points)
+                print("valid assembly!")
+                assembly_curve = get_assembly_curve(new_assemblyA, number_of_points=self.number_of_points,normelaize_curve = True)
                 # assembly_curve = [1]
                 if is_dissimilar(assembly_curve, self.curve_database):
-                    # print("added assembly")
+
+                    print(f"----------------added assembly {len(self.curve_database)}----------------")
                     self.curve_database.append(assembly_curve)
                     accepted_assemblies.append(new_assemblyA)
+                else:
+                    print(f"assembly too similar to db")
+
 
         return accepted_assemblies
 
     def get_origin_assembly (self):
         origin_assembly = create_assemblyA()
-        origin_curve = get_assembly_curve(origin_assembly, number_of_points=self.number_of_points)
+        origin_curve = get_assembly_curve(origin_assembly, number_of_points=self.number_of_points,normelaize_curve=True)
 
         while not is_dissimilar(origin_curve, self.curve_database):
             # print("Origin assembly too similar to current assemblies")
             origin_assembly = create_assemblyA()
-            origin_curve = get_assembly_curve(origin_assembly, number_of_points=self.number_of_points)
+            origin_curve = get_assembly_curve(origin_assembly, number_of_points=self.number_of_points,normelaize_curve=True)
 
         self.database += [origin_assembly]
         self.curve_database += [origin_curve]
@@ -604,22 +636,22 @@ class AssemblyA_Sampler:
 
         origin_assembly, _ = self.get_origin_assembly()
 
-        # print(f"origin_assembly initiaized")
-        # print(f"curve_database is {self.curve_database}")
+        print(f"origin_assembly initiaized")
+        print(f"curve_database is {self.curve_database}")
 
         while len(self.database)-cur_database_len < min_samples_number:
-            # print(f"current database size {len(self.database)}")
+            print(f"current database size {len(self.database)}")
             accepted_assemblies = self.recursive_sample_assemblyA(origin_assembly,
                                                                   num_of_samples_around=num_of_samples_around)
             self.database += accepted_assemblies
-            while len(accepted_assemblies) > 0 and len(database) < min_samples_number:
+            while len(accepted_assemblies) > 0 and len(self.database) < min_samples_number:
                 origin_assembly = accepted_assemblies[0]
                 neighbor_accepted_assemblies = self.recursive_sample_assemblyA(origin_assembly,
                                                                                num_of_samples_around=num_of_samples_around)
                 self.database += neighbor_accepted_assemblies
                 accepted_assemblies = accepted_assemblies[1:]
                 accepted_assemblies += neighbor_accepted_assemblies
-
+            print("---we will get another origin assembly---")
             origin_assembly, _ = self.get_origin_assembly()
 
     def get_database(self):
@@ -628,6 +660,20 @@ class AssemblyA_Sampler:
     def get_curve_database(self):
         return self.curve_database
 
+
+    def get_closest_curve(self,curve):
+        curve = Curve(curve)
+        min_dis = curve.normA(curve, self.curve_database[0])
+        min_curve = self.curve_database[0]
+        for db_curve in self.curve_database[1:]:
+            cur_dis = curve.normA(curve, db_curve)
+            if cur_dis<min_dis:
+                min_dis=cur_dis
+                min_curve = db_curve
+        return min_curve.to_json(s)
+
+def normalize_curve(curve, anchor):
+    return ([list(sample - anchor) for sample in curve])
 
 
 

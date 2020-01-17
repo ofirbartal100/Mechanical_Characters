@@ -2,14 +2,18 @@ import json
 
 from assembly import *
 
-a = return_prototype()
-print(is_vaild_assembleA(a))
+# a = return_prototype()
+# print(is_vaild_assembleA(a))
 
-# sample = AssemblyA_Sampler()
-#
-# sample.create_assemblyA_database(2)
-# database, curve_databas  = sample.get_database(), sample.get_curve_database()
+sample = AssemblyA_Sampler()
 
+sample.create_assemblyA_database(300)
+database, curve_databas  = sample.get_database(), sample.get_curve_database()
+print(len(database))
+print(len(curve_databas))
+
+for i,ass in enumerate(database):
+    ass.plot_assembly(plot_path =r"C:\Users\A\Desktop\temp" , image_number = i,save_images = True)
 
 
 # database, curve_databas = create_assemblyA_database(10)
