@@ -694,20 +694,22 @@ class AssemblyA_Sampler:
         return self.curve_database
 
     def get_closest_curve(self, curve,get_all_dis = False):
-        #curve = Curve(curve)
+
         min_dis = curve.normA(curve, self.curve_database[0])
         min_curve = self.curve_database[0]
+        closest_assembly = self.database[0]
         if get_all_dis:
             all_dist = {}
-        for db_curve in self.curve_database[1:]:
+        for i,db_curve in enumerate(self.curve_database[1:]):
             cur_dis = curve.normA(curve, db_curve)
             if get_all_dis:
                 all_dist[db_curve] = cur_dis
             if cur_dis < min_dis:
+                closest_assembly = self.database[i+1]
                 min_dis = cur_dis
                 min_curve = db_curve
         # return min_curve.to_json(s)
-        return min_curve,all_dist if get_all_dis else min_curve
+        return min_curve,closest_assembly,all_dist if get_all_dis else min_curve
 
     def save(self, path = r"C:\Users\A\Desktop\temp"):
         with open(path + rf"\sampler", "wb") as handle:

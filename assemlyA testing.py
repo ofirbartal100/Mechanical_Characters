@@ -21,11 +21,12 @@ sample = dill.load(input_file)
 target = create_assemblyA()
 print(is_vaild_assembleA(target))
 target_curve = get_assembly_curve(target,number_of_points=72)
-db_closest_curve, all_dist = sample.get_closest_curve(target_curve, get_all_dis = True)
+db_closest_curve,closest_assembly, all_dist = sample.get_closest_curve(target_curve, get_all_dis = True)
 for k in all_dist:
     print(all_dist[k])
 print("-------")
 print(all_dist[db_closest_curve])
+closest_assembly.plot_assembly(plot_path =r"C:\Users\A\Desktop\temp" , image_number = 1000,save_images = True)
 
 
 # input_file = open(r"C:\Users\A\Desktop\temp\sampler", 'rb')
