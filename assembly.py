@@ -446,7 +446,6 @@ def points_distance(point1, point2):
 def is_vaild_assembleA(assemblyA, debug_mode=False):
     config = assemblyA.config
 
-
     if config["stick1_init_parameters"]["length"] < config["stick1_stick2_joint_location"][0]:
         if debug_mode:
             print(
@@ -692,23 +691,23 @@ class AssemblyA_Sampler:
     def get_curve_database(self):
         return self.curve_database
 
-    def get_closest_curve(self, curve,get_all_dis = False):
+    def get_closest_curve(self, curve, get_all_dis=False):
 
         min_dis = curve.normA(curve, self.curve_database[0])
         min_curve = self.curve_database[0]
         closest_assembly = self.database[0]
         if get_all_dis:
             all_dist = {}
-        for i,db_curve in enumerate(self.curve_database[1:]):
+        for i, db_curve in enumerate(self.curve_database[1:]):
             cur_dis = curve.normA(curve, db_curve)
             if get_all_dis:
                 all_dist[db_curve] = cur_dis
             if cur_dis < min_dis:
-                closest_assembly = self.database[i+1]
+                closest_assembly = self.database[i + 1]
                 min_dis = cur_dis
                 min_curve = db_curve
         # return min_curve.to_json(s)
-        return min_curve,closest_assembly,all_dist if get_all_dis else min_curve
+        return min_curve, closest_assembly, all_dist if get_all_dis else min_curve
 
     def save(self, path=r"C:\Users\A\Desktop\temp"):
         with open(path + rf"\sampler", "wb") as handle:
@@ -852,33 +851,35 @@ class StickSnake(Assembly):
         stick4 = Stick(7)
         stick5 = Stick(7)
         origin = Gear(1)
-        comp_lst = [stick1,
-                    stick2,
-                    stick3,
-                    stick4,
-                    stick5,
-                    origin,
-                    ]
-        self.comp_dict = {'stick1': stick1,
-                          'stick2': stick2,
-                          'stick3': stick3,
-                          'stick4': stick4,
-                          'stick5': stick5,
-                          'origin': origin,
-                          }
-        fix_x, fix_y = 20, 30
+        comp_lst = [
+            # stick1,
+            # stick2,
+            # stick3,
+            # stick4,
+            stick5,
+            # origin,
+        ]
+        self.comp_dict = {
+            # 'stick1': stick1,
+            # 'stick2': stick2,
+            # 'stick3': stick3,
+            # 'stick4': stick4,
+            'stick5': stick5,
+            # 'origin': origin,
+        }
+        fix_x, fix_y = 20, 20
         con_lst = [
-            PinConnection2(stick1, stick2, Point(stick1.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
-                           Alignment(0, 0, 0)),
-            PinConnection2(stick2, stick3, Point(stick2.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
-                           Alignment(0, 0, 0)),
-            PinConnection2(stick3, stick4, Point(stick3.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
-                           Alignment(0, 0, 0)),
-            PinConnection2(stick4, stick5, Point(stick4.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
-                           Alignment(0, 0, 0)),
-            PinConnection2(stick1, origin, Point(0, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
-                           Alignment(0, 0, 0)),
-            FixedConnection2(origin, Point(fix_x, fix_y, 0), Alignment(0, 0, 0)),
+            # PinConnection2(stick1, stick2, Point(stick1.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+            #                Alignment(0, 0, 0)),
+            # PinConnection2(stick2, stick3, Point(stick2.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+            #                Alignment(0, 0, 0)),
+            # PinConnection2(stick3, stick4, Point(stick3.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+            #                Alignment(0, 0, 0)),
+            # PinConnection2(stick4, stick5, Point(stick4.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+            #                Alignment(0, 0, 0)),
+            # PinConnection2(stick1, origin, Point(0, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+            #                Alignment(0, 0, 0)),
+            # FixedConnection2(origin, Point(fix_x, fix_y, 0), Alignment(0, 0, 0)),
         ]
         Assembly.__init__(self, con_lst, comp_lst)
 
