@@ -51,12 +51,12 @@ class Assembly:
         returns a new assembly made of self and other assembly
         :return:
         """
-        return Assembly.__init__(self.con_list+other_asm.con_list,
-                                 self.components + other_asm.components,
-                                 actuator=self.actuator,
-                                 iters=self.iterations,
-                                 tol=self.tolerance,
-                                 plot_newt=self.plot_newt)
+        return Assembly(self.con_list + other_asm.con_list,
+                        components=self.components + other_asm.components,
+                        actuator=self.actuator or other_asm.actuator,
+                        iters=self.iterations,
+                        tol=self.tolerance,
+                        plot_newt=self.plot_newt)
 
     def describe_assembly(self):
         return [describe_comp(c) for c in self.components]
@@ -74,10 +74,11 @@ class Assembly:
                 direction = comp.get_global_position(Point(comp.radius, 0, 0))[:2]
                 plot_circle(ax, center[0], center[1], radius)
                 ax.plot((center[0], direction[0]), (center[1], direction[1]), 'y-')
-        # plt.xlim(-10, 10)
-        # plt.ylim(-10, 10)
+        plt.xlim(-30, 30)
+        plt.ylim(-30, 30)
         plt.grid(linestyle='--')
-        fig.show()
+        ax.set_aspect('equal')
+        # fig.show()
         if plot_path and save_images:
             plt.savefig(plot_path + fr"\image_{image_number}")
 
@@ -792,6 +793,55 @@ class AssemblyA(Assembly):
         :return: 3-dim position of the assembly red point in global axis
         """
         return self.red_point_component.get_global_position(np.array([self.red_point_component.length, 0, 0]))
+
+
+class StickFigure(Assembly):
+
+    def __init__(self):
+        rleg = Stick(20)
+        lleg = Stick(20)
+        body = Stick(40)
+        rhand1 = Stick(20)
+        lhand = Stick(20)
+        head = Gear(5)
+        comp_lst = [rleg,
+                    lleg,
+                    body,
+                    rhand1,
+                    lhand,
+                    head
+                    ]
+        self.comp_dict = {'rleg': rleg,
+                          'lleg': lleg,
+                          'body': body,
+                          'rhand1': rhand1,
+                          'lhand': lhand,
+                          'head': head}
+        crotch_x, crotch_y = 15, -20
+        con_lst = [
+            PinConnection2(body, rleg, Point(0, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0), Alignment(0, 0, 0)),
+            PinConnection2(body, lleg, Point(0, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0), Alignment(0, 0, 0)),
+            PinConnection2(body, rhand1, Point(body.length - 2 * head.radius, 0, 0),
+                           Point(0, 0, 0), Alignment(0, 0, 0), Alignment(0, 0, 0)),
+            # PinConnection2(rhand1, rhand2, Point(rhand1.length, 0, 0), Point(0, 0, 0)),
+            PinConnection2(body, lhand, Point(body.length - 2 * head.radius, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+                           Alignment(0, 0, 0)),
+            PinConnection2(body, head, Point(body.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+                           Alignment(0, 0, 0)),
+            FixedConnection2(lleg, Point(crotch_x, crotch_y, 0), Alignment(0, 0, -135)),
+            FixedConnection2(rleg, Point(crotch_x, crotch_y, 0), Alignment(0, 0, -45)),
+            # FixedConnection2(head, Point(crotch_x, crotch_y+body.length, 0), Alignment(0, 0, 0)),
+        ]
+        Assembly.__init__(self, con_lst, comp_lst)
+
+    def add_driving_assembly(self, driving_mec):
+        combined_asm = self.merge_assembly(driving_mec)
+        redp_comp = driving_mec.red_point_component
+        combined_asm.con_list = combined_asm.con_list + [PinConnection2(self.comp_dict['rhand1'],
+                                                                        redp_comp,
+                                                                        Point(self.comp_dict['rhand1'].length, 0, 0),
+                                                                        Point(redp_comp.length, 0, 0))]
+        return combined_asm
 
 # origin_assembly = return_prototype()
 # print(is_vaild_assembleA(origin_assembly))
