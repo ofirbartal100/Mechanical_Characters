@@ -5,7 +5,7 @@ from collections import defaultdict
 from scipy.optimize import minimize
 from matplotlib import pyplot as plt
 import dill as pickle
-#import pickle
+# import pickle
 
 import random
 from configuration import *
@@ -51,36 +51,38 @@ class Assembly:
         returns a new assembly made of self and other assembly
         :return:
         """
-        return Assembly.__init__(self.con_list+other_asm.con_list,
-                                 self.components + other_asm.components,
-                                 actuator=self.actuator,
-                                 iters=self.iterations,
-                                 tol=self.tolerance,
-                                 plot_newt=self.plot_newt)
+        return Assembly(self.con_list + other_asm.con_list,
+                        components=self.components + other_asm.components,
+                        actuator=self.actuator or other_asm.actuator,
+                        iters=self.iterations,
+                        tol=self.tolerance,
+                        plot_newt=self.plot_newt)
 
     def describe_assembly(self):
         return [describe_comp(c) for c in self.components]
 
-    def plot_assembly(self, plot_path=None, image_number=None, save_images=False):
+    def plot_assembly(self, plot_path=None, image_number=None, save_images=False, user_fig=None):
         fig, ax = plt.subplots()
         for comp in self.components:
             if isinstance(comp, Stick):
+                clr = 'r'
+
                 edge1 = comp.configuration.position.vector()[:2]
                 edge2 = comp.get_global_position(Point(comp.length, 0, 0))[:2]
-                ax.plot((edge1[0], edge2[0]), (edge1[1], edge2[1]), '-r')
+                ax.plot((edge1[0], edge2[0]), (edge1[1], edge2[1]), f'-{clr}')
             if isinstance(comp, Gear):
                 center = comp.configuration.position.vector()[:2]
                 radius = comp.radius
                 direction = comp.get_global_position(Point(comp.radius, 0, 0))[:2]
                 plot_circle(ax, center[0], center[1], radius)
                 ax.plot((center[0], direction[0]), (center[1], direction[1]), 'y-')
-        # plt.xlim(-10, 10)
-        # plt.ylim(-10, 10)
+        plt.xlim(-30, 30)
+        plt.ylim(-30, 30)
         plt.grid(linestyle='--')
-        fig.show()
+        ax.set_aspect('equal')
+        # fig.show()
         if plot_path and save_images:
             plt.savefig(plot_path + fr"\image_{image_number}")
-
 
     def get_assembly_constraint(self):
         """
@@ -142,7 +144,8 @@ class Assembly:
         :return: the constrain describing the whole assemply
                 and the index (dict(param:position)) of the params
         """
-        self.const(np.zeros(len(self.components)*6))
+        self.const(np.zeros(len(self.components) * 6))
+
         def assembly_const_deriv(param_list):
             """
             :param param_list: list of parameters for each constraint
@@ -359,12 +362,7 @@ def sample_stick_parameters_from_current(stick_param, diff_val=2, stick2_len_par
     return stick_param
 
 
-
-
-
-
 def sample_position(joint_location, diff_val=2, num_of_axis=3, enable_negative=True):
-
     for i in range(num_of_axis):
         new_pos = round(joint_location[i] + random.uniform(-diff_val, diff_val), 2)
         if not enable_negative:
@@ -445,9 +443,8 @@ def points_distance(point1, point2):
     return round(dis ** 0.5, 2)
 
 
-def is_vaild_assembleA(assemblyA,debug_mode = False):
+def is_vaild_assembleA(assemblyA, debug_mode=False):
     config = assemblyA.config
-
 
     if config["stick1_init_parameters"]["length"] < config["stick1_stick2_joint_location"][0]:
         if debug_mode:
@@ -621,13 +618,13 @@ class AssemblyA_Sampler:
         self.number_of_points = number_of_points
         self.num_of_samples_around = num_of_samples_around
 
-    def recursive_sample_assemblyA(self, assemblyA, num_of_samples_around=None,debug_mode = False):
+    def recursive_sample_assemblyA(self, assemblyA, num_of_samples_around=None, debug_mode=False):
         if not num_of_samples_around:
             num_of_samples_around = self.num_of_samples_around
         accepted_assemblies = []
         for i in range(num_of_samples_around):
-            new_assemblyA = sample_from_cur_assemblyA(assemblyA, random_sample=0.5,)
-            if is_vaild_assembleA(new_assemblyA,debug_mode=debug_mode):
+            new_assemblyA = sample_from_cur_assemblyA(assemblyA, random_sample=0.5, )
+            if is_vaild_assembleA(new_assemblyA, debug_mode=debug_mode):
                 if debug_mode:
                     print("valid assembly!")
                 assembly_curve = get_assembly_curve(new_assemblyA, number_of_points=self.number_of_points,
@@ -638,7 +635,7 @@ class AssemblyA_Sampler:
                         print(f"----------------added assembly {len(self.curve_database)}----------------")
                     self.curve_database.append(assembly_curve)
                     accepted_assemblies.append(new_assemblyA)
-                elif(debug_mode):
+                elif (debug_mode):
                     print(f"assembly too similar to db")
 
         return accepted_assemblies
@@ -659,7 +656,7 @@ class AssemblyA_Sampler:
 
         return origin_assembly, origin_curve
 
-    def create_assemblyA_database(self, min_samples_number=1000, num_of_samples_around=None,debug_mode = False):
+    def create_assemblyA_database(self, min_samples_number=1000, num_of_samples_around=None, debug_mode=False):
         if not num_of_samples_around:
             num_of_samples_around = self.num_of_samples_around
         cur_database_len = len(self.database)
@@ -674,13 +671,14 @@ class AssemblyA_Sampler:
             if debug_mode:
                 print(f"current database size {len(self.database)}")
             accepted_assemblies = self.recursive_sample_assemblyA(origin_assembly,
-                                                                  num_of_samples_around=num_of_samples_around,debug_mode = debug_mode)
+                                                                  num_of_samples_around=num_of_samples_around,
+                                                                  debug_mode=debug_mode)
             self.database += accepted_assemblies
             while len(accepted_assemblies) > 0 and len(self.database) < min_samples_number:
                 origin_assembly = accepted_assemblies[0]
                 neighbor_accepted_assemblies = self.recursive_sample_assemblyA(origin_assembly,
                                                                                num_of_samples_around=num_of_samples_around,
-                                                                               debug_mode = debug_mode)
+                                                                               debug_mode=debug_mode)
                 self.database += neighbor_accepted_assemblies
                 accepted_assemblies = accepted_assemblies[1:]
                 accepted_assemblies += neighbor_accepted_assemblies
@@ -694,29 +692,32 @@ class AssemblyA_Sampler:
     def get_curve_database(self):
         return self.curve_database
 
-    def get_closest_curve(self, curve,get_all_dis = False):
-        #curve = Curve(curve)
+    def get_closest_curve(self, curve, get_all_dis=False):
+
         min_dis = curve.normA(curve, self.curve_database[0])
         min_curve = self.curve_database[0]
+        closest_assembly = self.database[0]
         if get_all_dis:
             all_dist = {}
-        for db_curve in self.curve_database[1:]:
+        for i, db_curve in enumerate(self.curve_database[1:]):
             cur_dis = curve.normA(curve, db_curve)
             if get_all_dis:
                 all_dist[db_curve] = cur_dis
             if cur_dis < min_dis:
+                closest_assembly = self.database[i + 1]
                 min_dis = cur_dis
                 min_curve = db_curve
         # return min_curve.to_json(s)
-        return min_curve,all_dist if get_all_dis else min_curve
+        return min_curve, closest_assembly, all_dist if get_all_dis else min_curve
 
-    def save(self, path = r"C:\Users\A\Desktop\temp"):
+    def save(self, path=r"C:\Users\A\Desktop\temp"):
         with open(path + rf"\sampler", "wb") as handle:
             pickle.dump(self, handle)
 
-    def load(self, path = r"C:\Users\A\Desktop\temp"):
+    def load(self, path=r"C:\Users\A\Desktop\temp"):
         with open(path + rf"\sampler", "wb") as handle:
             pickle.dump(self, handle)
+
 
 def normalize_curve(curve, anchor):
     return ([list(sample - anchor) for sample in curve])
@@ -801,6 +802,106 @@ class AssemblyA(Assembly):
         :return: 3-dim position of the assembly red point in global axis
         """
         return self.red_point_component.get_global_position(np.array([self.red_point_component.length, 0, 0]))
+
+
+class StickFigure(Assembly):
+
+    def __init__(self):
+        rleg = Stick(20)
+        lleg = Stick(20)
+        body = Stick(40)
+        rhand1 = Stick(20)
+        lhand = Stick(20)
+        head = Gear(5)
+        comp_lst = [rleg,
+                    lleg,
+                    body,
+                    rhand1,
+                    lhand,
+                    head
+                    ]
+        self.comp_dict = {'rleg': rleg,
+                          'lleg': lleg,
+                          'body': body,
+                          'rhand1': rhand1,
+                          'lhand': lhand,
+                          'head': head}
+        crotch_x, crotch_y = 15, -20
+        con_lst = [
+            PinConnection2(body, rleg, Point(0, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0), Alignment(0, 0, 0)),
+            PinConnection2(body, lleg, Point(0, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0), Alignment(0, 0, 0)),
+            PinConnection2(body, rhand1, Point(body.length - 2 * head.radius, 0, 0),
+                           Point(0, 0, 0), Alignment(0, 0, 0), Alignment(0, 0, 0)),
+            # PinConnection2(rhand1, rhand2, Point(rhand1.length, 0, 0), Point(0, 0, 0)),
+            PinConnection2(body, lhand, Point(body.length - 2 * head.radius, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+                           Alignment(0, 0, 0)),
+            PinConnection2(body, head, Point(body.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+                           Alignment(0, 0, 0)),
+            FixedConnection2(lleg, Point(crotch_x, crotch_y, 0), Alignment(0, 0, -135)),
+            FixedConnection2(rleg, Point(crotch_x, crotch_y, 0), Alignment(0, 0, -45)),
+            # FixedConnection2(head, Point(crotch_x, crotch_y+body.length, 0), Alignment(0, 0, 0)),
+        ]
+        Assembly.__init__(self, con_lst, comp_lst)
+
+    def add_driving_assembly(self, driving_mec):
+        combined_asm = self.merge_assembly(driving_mec)
+        redp_comp = driving_mec.red_point_component
+        combined_asm.con_list = combined_asm.con_list + [PinConnection2(self.comp_dict['rhand1'],
+                                                                        redp_comp,
+                                                                        Point(self.comp_dict['rhand1'].length, 0, 0),
+                                                                        Point(redp_comp.length, 0, 0))]
+        return combined_asm
+
+
+class StickSnake(Assembly):
+
+    def __init__(self):
+        stick1 = Stick(7)
+        stick2 = Stick(7)
+        stick3 = Stick(7)
+        stick4 = Stick(7)
+        stick5 = Stick(7)
+        origin = Gear(1)
+        comp_lst = [
+            # stick1,
+            # stick2,
+            # stick3,
+            # stick4,
+            stick5,
+            # origin,
+        ]
+        self.comp_dict = {
+            # 'stick1': stick1,
+            # 'stick2': stick2,
+            # 'stick3': stick3,
+            # 'stick4': stick4,
+            'stick5': stick5,
+            # 'origin': origin,
+        }
+        fix_x, fix_y = 20, 20
+        con_lst = [
+            # PinConnection2(stick1, stick2, Point(stick1.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+            #                Alignment(0, 0, 0)),
+            # PinConnection2(stick2, stick3, Point(stick2.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+            #                Alignment(0, 0, 0)),
+            # PinConnection2(stick3, stick4, Point(stick3.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+            #                Alignment(0, 0, 0)),
+            # PinConnection2(stick4, stick5, Point(stick4.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+            #                Alignment(0, 0, 0)),
+            # PinConnection2(stick1, origin, Point(0, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+            #                Alignment(0, 0, 0)),
+            # FixedConnection2(origin, Point(fix_x, fix_y, 0), Alignment(0, 0, 0)),
+        ]
+        Assembly.__init__(self, con_lst, comp_lst)
+
+    def add_driving_assembly(self, driving_mec):
+        combined_asm = self.merge_assembly(driving_mec)
+        redp_comp = driving_mec.red_point_component
+        combined_asm.con_list = combined_asm.con_list + [PinConnection2(self.comp_dict['stick5'],
+                                                                        redp_comp,
+                                                                        Point(self.comp_dict['stick5'].length, 0, 0),
+                                                                        Point(redp_comp.length, 0, 0))]
+        return combined_asm
 
 # origin_assembly = return_prototype()
 # print(is_vaild_assembleA(origin_assembly))

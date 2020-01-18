@@ -15,17 +15,49 @@ import dill
 # for i,ass in enumerate(database):
 #     ass.plot_assembly(plot_path =r"C:\Users\A\Desktop\temp" , image_number = i,save_images = True)
 
-input_file = open(r"C:\Users\A\Desktop\temp\sampler", 'rb')
+path = r"C:\Users\A\Desktop\temp"
+input_file = open(path+r"\sampler", 'rb')
 sample = dill.load(input_file)
 
 target = create_assemblyA()
 print(is_vaild_assembleA(target))
 target_curve = get_assembly_curve(target,number_of_points=72)
-db_closest_curve, all_dist = sample.get_closest_curve(target_curve, get_all_dis = True)
+db_closest_curve,closest_assembly, all_dist = sample.get_closest_curve(target_curve, get_all_dis = True)
 for k in all_dist:
     print(all_dist[k])
+
 print("-------")
+# print(db_closest_curve)
 print(all_dist[db_closest_curve])
+closest_assembly.plot_assembly(plot_path =path , image_number = 1000,save_images = True)
+
+figure = StickSnake()
+figure.update_state2()
+figure.plot_assembly()
+
+
+
+combined = figure.add_driving_assembly(closest_assembly)
+combined.update_state2()
+combined.plot_assembly(plot_path=path,
+                       save_images=True,
+                       image_number=2000)
+
+print(combined.describe_assembly())
+
+combined_configuration = []
+for i in range(36):
+    print(i)
+    combined.actuator.turn(360 / 36)
+    combined.update_state2()
+    combined_configuration.append(combined.describe_assembly())
+    combined.plot_assembly(plot_path=path,
+                           save_images=True,
+                           image_number=5000+i+1)
+
+with open(path + rf"\combined_pos_config.j", "w") as handle:
+    json.dump(combined_configuration, handle)
+
 
 
 # input_file = open(r"C:\Users\A\Desktop\temp\sampler", 'rb')
