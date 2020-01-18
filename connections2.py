@@ -73,6 +73,9 @@ class PinConnection2(Connection2):
         if isinstance(rotation_axis2, Alignment):
             self.rotation_axis2 = rotation_axis2.vector()
 
+        self.rotation_axis1 = np.deg2rad(self.rotation_axis1)
+        self.rotation_axis2 = np.deg2rad(self.rotation_axis2)
+
         # the order params are inserted must be same as order in const and cost_prime
         self.params[(self.comp1.id, 'x')] = 0
         self.params[(self.comp1.id, 'y')] = 0
@@ -259,7 +262,11 @@ class FixedConnection2(Connection2):
 
         self.comp = comp
         self.fixed_position = fixed_position
+        if isinstance(fixed_position, Point):
+            self.fixed_position = self.fixed_position.vector()
         self.fixed_orientation = fixed_orientation
+        if isinstance(fixed_orientation, Alignment):
+            self.fixed_orientation = self.fixed_orientation.vector()
 
         # the order params are inserted must be same as order in const and cost_prime
         self.params[(self.comp.id, 'x')] = 0
@@ -274,7 +281,7 @@ class FixedConnection2(Connection2):
         def const(x0, y0, z0, c0, b0, a0):
             # self.comp.apply_state(x0, y0, z0, a0, b0, c0)
             X = np.array([x0, y0, z0]) - self.fixed_position
-            V = np.array([c0, b0, a0]) - self.fixed_orientation
+            V = np.array([c0, b0, a0]) - np.deg2rad(self.fixed_orientation)
             return [*X, *V]
 
         return const, self.params
