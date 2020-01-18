@@ -682,7 +682,8 @@ class AssemblyA_Sampler:
             if cur_dis < min_dis:
                 min_dis = cur_dis
                 min_curve = db_curve
-        return min_curve.to_json(s)
+        # return min_curve.to_json(s)
+        return min_curve
 
 
 def normalize_curve(curve, anchor):

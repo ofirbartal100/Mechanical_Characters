@@ -1,26 +1,34 @@
 from assembly import *
 import json
+import argparse
+
 from curve import Curve
 
-def normalize_curve(curve, anchor):
-    return ([list(sample - anchor) for sample in curve])
 
-import time
-def generate_random_curve(number_of_points=360, gear_diff_val=1, stick_diff_val=1, position_diff_val=1):
-    random_assembly_a = create_assemblyA(gear_diff_val=gear_diff_val, stick_diff_val=stick_diff_val, \
-                                         position_diff_val=position_diff_val)
-    # start = time.time()
-    assembly_curve = get_assembly_curve_parallel(random_assembly_a, number_of_points=number_of_points)
-    # end = time.time()
-    # print("phase 1 {}".format(end-start))
+def read_input_as_curve(json_path):
+    # read file
+    with open(json_path, 'r') as j:
+        data = j.read()
+    # parse file
+    points = json.loads(data)
+    return Curve(points)
 
-    assembly_curve = normalize_curve(assembly_curve, random_assembly_a.anchor)
-
-    c = Curve(assembly_curve)
-    # output curve to stdout for the C# to read
-    print(c.to_json())
-
+parser = argparse.ArgumentParser(description='Gets a user defined curve as a points list and searching the DB for closest representing curve')
+parser.add_argument('-json_path', help='a path to the file containing a json formatted points list')
 
 if __name__ == "__main__":
-    # generate_random_curve(*sys.argv[1:])
-    generate_random_curve(number_of_points=76, gear_diff_val=1, stick_diff_val=2, position_diff_val=1)
+    # arguments parser
+    args = parser.parse_args()
+
+
+    # handle input
+    curve = read_input_as_curve(args.json_path)
+
+    # # for some reason it is instance based and not static ?
+    # assembly_A_sampler = AssemblyA_Sampler(number_of_points=76)
+    #
+    # closest_curve = assembly_A_sampler.get_closest_curve(curve)
+
+    # output to standard output
+    # print(closest_curve.to_json())
+    print(curve.to_json())
