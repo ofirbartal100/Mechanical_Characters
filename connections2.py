@@ -36,8 +36,8 @@ class Connection2(ABC):
 
 class PinConnection2(Connection2):
 
-    def __init__(self, comp1, comp2, joint1, joint2, rotation_axis1=Alignment(90, 90, 0),
-                 rotation_axis2=Alignment(90, 90, 0)):
+    def __init__(self, comp1, comp2, joint1, joint2, rotation_axis1=Alignment(0, 0, 0),
+                 rotation_axis2=Alignment(0, 0, 0)):
         """
 
         :param comp1: component 1 involved in the pin connection

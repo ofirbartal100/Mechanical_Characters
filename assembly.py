@@ -66,18 +66,24 @@ class Assembly:
         for comp in self.components:
             if isinstance(comp, Stick):
                 clr = 'r'
-
+                if user_fig is not None:
+                    if comp in user_fig.components:
+                        clr = 'k'
                 edge1 = comp.configuration.position.vector()[:2]
                 edge2 = comp.get_global_position(Point(comp.length, 0, 0))[:2]
-                ax.plot((edge1[0], edge2[0]), (edge1[1], edge2[1]), f'-{clr}')
+                ax.plot((edge1[0], edge2[0]), (edge1[1], edge2[1]), f'-{clr}', alpha=0.5, linewidth=2)
             if isinstance(comp, Gear):
+                clr = 'y'
+                if user_fig is not None:
+                    if comp in user_fig.components:
+                        clr = 'k'
                 center = comp.configuration.position.vector()[:2]
                 radius = comp.radius
                 direction = comp.get_global_position(Point(comp.radius, 0, 0))[:2]
                 plot_circle(ax, center[0], center[1], radius)
-                ax.plot((center[0], direction[0]), (center[1], direction[1]), 'y-')
-        plt.xlim(-30, 30)
-        plt.ylim(-30, 30)
+                ax.plot((center[0], direction[0]), (center[1], direction[1]), f'{clr}-', alpha=0.5, linewidth=2)
+        plt.xlim(-20, 50)
+        plt.ylim(-50, 50)
         plt.grid(linestyle='--')
         ax.set_aspect('equal')
         # fig.show()
@@ -799,46 +805,66 @@ class StickFigure(Assembly):
         rleg = Stick(20)
         lleg = Stick(20)
         body = Stick(40)
-        rhand1 = Stick(20)
-        lhand = Stick(20)
+        rhand1 = Stick(7)
+        rhand2 = Stick(7)
+        rhand3 = Stick(3)
+        lhand1 = Stick(7)
+        lhand2 = Stick(7)
+        lhand3 = Stick(3)
         head = Gear(5)
         comp_lst = [rleg,
                     lleg,
                     body,
                     rhand1,
-                    lhand,
+                    rhand2,
+                    # rhand3,
+                    lhand1,
+                    lhand2,
+                    # lhand3,
                     head
                     ]
         self.comp_dict = {'rleg': rleg,
                           'lleg': lleg,
                           'body': body,
                           'rhand1': rhand1,
-                          'lhand': lhand,
+                          'rhand2': rhand2,
+                          # 'rhand3': rhand3,
+                          'lhand1': lhand1,
+                          'lhand2': lhand2,
+                          # 'lhand3': lhand3,
                           'head': head}
-        crotch_x, crotch_y = 15, -20
+        crotch_x, crotch_y = 15, 15 - 30
         con_lst = [
             PinConnection2(body, rleg, Point(0, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0), Alignment(0, 0, 0)),
             PinConnection2(body, lleg, Point(0, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0), Alignment(0, 0, 0)),
             PinConnection2(body, rhand1, Point(body.length - 2 * head.radius, 0, 0),
                            Point(0, 0, 0), Alignment(0, 0, 0), Alignment(0, 0, 0)),
-            # PinConnection2(rhand1, rhand2, Point(rhand1.length, 0, 0), Point(0, 0, 0)),
-            PinConnection2(body, lhand, Point(body.length - 2 * head.radius, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+            PinConnection2(rhand1, rhand2, Point(rhand1.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
                            Alignment(0, 0, 0)),
+            # PinConnection2(rhand2, rhand3, Point(rhand2.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+            #                Alignment(0, 0, 0)),
+            PinConnection2(body, lhand1, Point(body.length - 2 * head.radius, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+                           Alignment(0, 0, 0)),
+            PinConnection2(lhand1, lhand2, Point(lhand1.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+                           Alignment(0, 0, 0)),
+            # PinConnection2(lhand2, lhand3, Point(lhand2.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+            #                Alignment(0, 0, 0)),
             PinConnection2(body, head, Point(body.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
                            Alignment(0, 0, 0)),
             FixedConnection2(lleg, Point(crotch_x, crotch_y, 0), Alignment(0, 0, -135)),
             FixedConnection2(rleg, Point(crotch_x, crotch_y, 0), Alignment(0, 0, -45)),
-            # FixedConnection2(head, Point(crotch_x, crotch_y+body.length, 0), Alignment(0, 0, 0)),
+            FixedConnection2(head, Point(crotch_x, crotch_y + body.length, 0), Alignment(0, 0, 0)),
         ]
         Assembly.__init__(self, con_lst, comp_lst)
 
     def add_driving_assembly(self, driving_mec):
         combined_asm = self.merge_assembly(driving_mec)
         redp_comp = driving_mec.red_point_component
-        combined_asm.con_list = combined_asm.con_list + [PinConnection2(self.comp_dict['rhand1'],
+        combined_asm.con_list = combined_asm.con_list + [PinConnection2(self.comp_dict['rhand2'],
                                                                         redp_comp,
-                                                                        Point(self.comp_dict['rhand1'].length, 0, 0),
-                                                                        Point(redp_comp.length, 0, 0))]
+                                                                        Point(self.comp_dict['rhand2'].length, 0, 0),
+                                                                        Point(redp_comp.length, 0, 0),
+                                                                        Alignment(0, 0, 0), Alignment(0, 0, 0))]
         return combined_asm
 
 
@@ -851,35 +877,33 @@ class StickSnake(Assembly):
         stick4 = Stick(7)
         stick5 = Stick(7)
         origin = Gear(1)
-        comp_lst = [
-            # stick1,
-            # stick2,
-            # stick3,
-            # stick4,
-            stick5,
-            # origin,
-        ]
-        self.comp_dict = {
-            # 'stick1': stick1,
-            # 'stick2': stick2,
-            # 'stick3': stick3,
-            # 'stick4': stick4,
-            'stick5': stick5,
-            # 'origin': origin,
-        }
-        fix_x, fix_y = 20, 20
+        comp_lst = [stick1,
+                    stick2,
+                    stick3,
+                    stick4,
+                    stick5,
+                    origin,
+                    ]
+        self.comp_dict = {'stick1': stick1,
+                          'stick2': stick2,
+                          'stick3': stick3,
+                          'stick4': stick4,
+                          'stick5': stick5,
+                          'origin': origin,
+                          }
+        fix_x, fix_y = 15, 15
         con_lst = [
-            # PinConnection2(stick1, stick2, Point(stick1.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
-            #                Alignment(0, 0, 0)),
-            # PinConnection2(stick2, stick3, Point(stick2.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
-            #                Alignment(0, 0, 0)),
-            # PinConnection2(stick3, stick4, Point(stick3.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
-            #                Alignment(0, 0, 0)),
-            # PinConnection2(stick4, stick5, Point(stick4.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
-            #                Alignment(0, 0, 0)),
-            # PinConnection2(stick1, origin, Point(0, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
-            #                Alignment(0, 0, 0)),
-            # FixedConnection2(origin, Point(fix_x, fix_y, 0), Alignment(0, 0, 0)),
+            PinConnection2(stick1, stick2, Point(stick1.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+                           Alignment(0, 0, 0)),
+            PinConnection2(stick2, stick3, Point(stick2.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+                           Alignment(0, 0, 0)),
+            PinConnection2(stick3, stick4, Point(stick3.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+                           Alignment(0, 0, 0)),
+            PinConnection2(stick4, stick5, Point(stick4.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+                           Alignment(0, 0, 0)),
+            PinConnection2(stick1, origin, Point(0, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+                           Alignment(0, 0, 0)),
+            FixedConnection2(origin, Point(fix_x, fix_y, 0), Alignment(0, 0, 0)),
         ]
         Assembly.__init__(self, con_lst, comp_lst)
 
@@ -889,7 +913,9 @@ class StickSnake(Assembly):
         combined_asm.con_list = combined_asm.con_list + [PinConnection2(self.comp_dict['stick5'],
                                                                         redp_comp,
                                                                         Point(self.comp_dict['stick5'].length, 0, 0),
-                                                                        Point(redp_comp.length, 0, 0))]
+                                                                        Point(redp_comp.length, 0, 0),
+                                                                        Alignment(0, 0, 0),
+                                                                        Alignment(0, 0, 0))]
         return combined_asm
 
 # origin_assembly = return_prototype()
