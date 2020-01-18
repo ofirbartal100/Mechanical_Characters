@@ -3,7 +3,7 @@ import json
 from curve import Curve
 
 def normalize_curve(curve, anchor):
-    return ([list(sample - anchor) for sample in curve])
+    return ([list(sample - anchor) for sample in curve.points])
 
 import time
 def generate_random_curve(number_of_points=360, gear_diff_val=1, stick_diff_val=1, position_diff_val=1):
