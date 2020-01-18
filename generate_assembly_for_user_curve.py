@@ -1,6 +1,7 @@
 from assembly import *
 import json
 import argparse
+import dill
 
 from curve import Curve
 
@@ -24,11 +25,18 @@ if __name__ == "__main__":
     # handle input
     curve = read_input_as_curve(args.json_path)
 
-    # # for some reason it is instance based and not static ?
-    # assembly_A_sampler = AssemblyA_Sampler(number_of_points=76)
-    #
-    # closest_curve = assembly_A_sampler.get_closest_curve(curve)
+    input_file = open(r"C:\Users\ofir\Desktop\sampler", 'rb')
+    sample = dill.load(input_file)
+
+    target = create_assemblyA()
+    # print(is_vaild_assembleA(target))
+    target_curve = get_assembly_curve(target, number_of_points=72)
+    db_closest_curve, all_dist = sample.get_closest_curve(curve, get_all_dis=True)
+    # for k in all_dist:
+    #     print(all_dist[k])
+    # print("-------")
+    # print(all_dist[db_closest_curve])
 
     # output to standard output
     # print(closest_curve.to_json())
-    print(curve.to_json())
+    print(db_closest_curve.to_json())
