@@ -335,8 +335,14 @@ def sample_radius_from_current(radius, diff_val=2, min_radius=0.1):
     return round(max(min_radius, radius + random.uniform(-diff_val, diff_val)), 2)
 
 
-def sample_gear_parameters_from_current(gear_param, diff_val=2):
-    gear_param["radius"] = round(sample_radius_from_current(gear_param["radius"], diff_val=diff_val), 2)
+def sample_gear_parameters_from_current(gear_param, diff_val=2,second_gear = False, gear1_radius = 0.0):
+    if second_gear:
+        assert gear1_radius>0
+        power = random.choice([-1,0,1])
+        num =random.choice([2,3])
+        gear_param["radius"] = gear1_radius*(num**power)
+    else:
+        gear_param["radius"] = round(sample_radius_from_current(gear_param["radius"], diff_val=diff_val), 2)
     return gear_param
 
 
@@ -387,7 +393,8 @@ def sample_from_cur_assemblyA(assemblyA, gear_diff_val=0.5, stick_diff_val=0.5, 
                                                                               gear_diff_val)
     if random.random() < random_sample:
         config["gear2_init_parameters"] = sample_gear_parameters_from_current(config["gear2_init_parameters"],
-                                                                              gear_diff_val)
+                                                                              gear_diff_val,second_gear = True,\
+                                                                              gear1_radius = config["gear1_init_parameters"]["radius"])
     if random.random() < random_sample:
         config["stick1_init_parameters"] = sample_stick_parameters_from_current(config["stick1_init_parameters"],
                                                                                 stick_diff_val)
@@ -445,6 +452,7 @@ def points_distance(point1, point2):
 
 def is_vaild_assembleA(assemblyA, debug_mode=False):
     config = assemblyA.config
+
 
     if config["stick1_init_parameters"]["length"] < config["stick1_stick2_joint_location"][0]:
         if debug_mode:
@@ -545,6 +553,45 @@ def is_dissimilar(curve, database, gamma=1):
             return False
     return True
 
+def return_prototype2():
+    config = dict()
+
+    config["gear1_init_parameters"] = {"radius": 4}
+    config["stick1_init_parameters"] = {"length": 16}
+    config["gear2_init_parameters"] = {"radius": 2}
+    config["stick2_init_parameters"] = {"length": 9}
+
+    # config["gear1_init_parameters"] = {"radius": 2, "center": Point(0.0, 0.0, 0.0), "orientation": Alignment(0, 0, 0)}
+    # config["stick1_init_parameters"] = {"length": 6, "edge": Point(0, 0, 0), "orientation": Alignment(0, 0, 0)}
+    # config["gear2_init_parameters"] = {"radius": 1, "center": Point(6.0, 0.0, 0.0), "orientation": Alignment(0, 0, 0)}
+    # config["stick2_init_parameters"] = {"length": 4, "edge": Point(0.0, 0.0, 0.0), "orientation": Alignment(0, 0, 0)}
+
+    # for fixed
+    # config["gear1_fixed_position"] = Point(0.0, 0.0, 0.0)
+    # config["gear2_fixed_position"] = Point(6.0, 0.0, 0.0)
+
+    # for fixed2
+    config["gear1_fixed_position"] = np.array([0, 0, 0], dtype=float)
+    config["gear2_fixed_position"] = np.array([11, 0, 0], dtype=float)
+
+    # for fixed
+    # config["gear1_fixed_orientation"] = Alignment(0, 0, 0)
+    # config["gear2_fixed_orientation"] = Alignment(0, 0, 0)
+
+    # for fixed2
+    config["gear1_fixed_orientation"] = np.array([0, 0, 0.5 * np.pi], dtype=float)
+    config["gear2_fixed_orientation"] = np.array([0, 0, 0.5 * np.pi], dtype=float)
+
+    config["gear1_stick1_joint_location"] = np.array([4, 0, 0], dtype=float)
+    config["stick1_gear1_joint_location"] = np.array([0, 0, 0], dtype=float)
+    config["gear2_stick2_joint_location"] = np.array([0, 0.5, 0], dtype=float)
+    config["stick2_gear2_joint_location"] = np.array([0, 0, 0], dtype=float)
+
+    config["stick1_stick2_joint_location"] = np.array([10.5, 0, 0], dtype=float)
+    config["stick2_stick1_joint_location"] = np.array([config["stick2_init_parameters"]["length"], 0, 0], dtype=float)
+
+    return AssemblyA(config)
+
 
 def return_prototype():
     config = dict()
@@ -580,31 +627,31 @@ def return_prototype():
     config["gear2_stick2_joint_location"] = np.array([1, 0, 0], dtype=float)
     config["stick2_gear2_joint_location"] = np.array([0, 0, 0], dtype=float)
 
-    config["stick1_stick2_joint_location"] = np.array([9, 0, 0], dtype=float)
+    config["stick1_stick2_joint_location"] = np.array([12, 0, 0], dtype=float)
     config["stick2_stick1_joint_location"] = np.array([config["stick2_init_parameters"]["length"], 0, 0], dtype=float)
 
     return AssemblyA(config)
 
 
 def create_assemblyA(gear_diff_val=1, stick_diff_val=1, position_diff_val=1):
-    new_assembly = sample_from_cur_assemblyA(return_prototype(), gear_diff_val=gear_diff_val,
+    new_assembly = sample_from_cur_assemblyA(return_prototype2(), gear_diff_val=gear_diff_val,
                                              stick_diff_val=stick_diff_val, position_diff_val=position_diff_val,
                                              random_sample=0.8)
     while not is_vaild_assembleA(new_assembly):
         # print("not valid assembly")
-        new_assembly = sample_from_cur_assemblyA(return_prototype(), gear_diff_val=gear_diff_val,
+        new_assembly = sample_from_cur_assemblyA(return_prototype2(), gear_diff_val=gear_diff_val,
                                                  stick_diff_val=stick_diff_val, position_diff_val=position_diff_val,
                                                  random_sample=0.8)
     return new_assembly
 
 
 def create_random_assembly_A(gear_diff_val=1, stick_diff_val=1, position_diff_val=1):
-    new_assembly = sample_from_cur_assemblyA(return_prototype(), gear_diff_val=gear_diff_val,
+    new_assembly = sample_from_cur_assemblyA(return_prototype2(), gear_diff_val=gear_diff_val,
                                              stick_diff_val=stick_diff_val, position_diff_val=position_diff_val,
                                              random_sample=0.8)
     while not is_vaild_assembleA(new_assembly):
         # print("not valid assembly")
-        new_assembly = sample_from_cur_assemblyA(return_prototype(), gear_diff_val=gear_diff_val,
+        new_assembly = sample_from_cur_assemblyA(return_prototype2(), gear_diff_val=gear_diff_val,
                                                  stick_diff_val=stick_diff_val, position_diff_val=position_diff_val,
                                                  random_sample=0.8)
     return new_assembly
@@ -691,23 +738,23 @@ class AssemblyA_Sampler:
     def get_curve_database(self):
         return self.curve_database
 
-    def get_closest_curve(self, curve, get_all_dis=False):
+    def get_closest_curve(self, curve, get_all_dis = False):
 
         min_dis = curve.normA(curve, self.curve_database[0])
         min_curve = self.curve_database[0]
         closest_assembly = self.database[0]
         if get_all_dis:
             all_dist = {}
-        for i, db_curve in enumerate(self.curve_database[1:]):
+        for i,db_curve in enumerate(self.curve_database[1:]):
             cur_dis = curve.normA(curve, db_curve)
             if get_all_dis:
                 all_dist[db_curve] = cur_dis
             if cur_dis < min_dis:
-                closest_assembly = self.database[i + 1]
+                closest_assembly = self.database[i+1]
                 min_dis = cur_dis
                 min_curve = db_curve
         # return min_curve.to_json(s)
-        return min_curve, closest_assembly, all_dist if get_all_dis else min_curve
+        return min_curve,closest_assembly,all_dist if get_all_dis else None
 
     def save(self, path=r"C:\Users\A\Desktop\temp"):
         with open(path + rf"\sampler", "wb") as handle:
@@ -745,6 +792,7 @@ class AssemblyA(Assembly):
                            Gear(**config["gear2_init_parameters"]), Stick(**config["stick2_init_parameters"]), Gear(1),
                            Gear(1)]
         alignment = np.array([0, 0, 0.5 * np.pi])
+
         self.connections = [PhaseConnection2(self.components[0], self.actuator),
                             PhaseConnection2(self.components[0], self.components[2]),
 
@@ -851,35 +899,33 @@ class StickSnake(Assembly):
         stick4 = Stick(7)
         stick5 = Stick(7)
         origin = Gear(1)
-        comp_lst = [
-            # stick1,
-            # stick2,
-            # stick3,
-            # stick4,
-            stick5,
-            # origin,
-        ]
-        self.comp_dict = {
-            # 'stick1': stick1,
-            # 'stick2': stick2,
-            # 'stick3': stick3,
-            # 'stick4': stick4,
-            'stick5': stick5,
-            # 'origin': origin,
-        }
+        comp_lst = [stick1,
+                    stick2,
+                    stick3,
+                    stick4,
+                    stick5,
+                    origin,
+                    ]
+        self.comp_dict = {'stick1': stick1,
+                          'stick2': stick2,
+                          'stick3': stick3,
+                          'stick4': stick4,
+                          'stick5': stick5,
+                          'origin': origin,
+                          }
         fix_x, fix_y = 20, 20
         con_lst = [
-            # PinConnection2(stick1, stick2, Point(stick1.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
-            #                Alignment(0, 0, 0)),
-            # PinConnection2(stick2, stick3, Point(stick2.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
-            #                Alignment(0, 0, 0)),
-            # PinConnection2(stick3, stick4, Point(stick3.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
-            #                Alignment(0, 0, 0)),
-            # PinConnection2(stick4, stick5, Point(stick4.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
-            #                Alignment(0, 0, 0)),
-            # PinConnection2(stick1, origin, Point(0, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
-            #                Alignment(0, 0, 0)),
-            # FixedConnection2(origin, Point(fix_x, fix_y, 0), Alignment(0, 0, 0)),
+            PinConnection2(stick1, stick2, Point(stick1.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+                           Alignment(0, 0, 0)),
+            PinConnection2(stick2, stick3, Point(stick2.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+                           Alignment(0, 0, 0)),
+            PinConnection2(stick3, stick4, Point(stick3.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+                           Alignment(0, 0, 0)),
+            PinConnection2(stick4, stick5, Point(stick4.length, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+                           Alignment(0, 0, 0)),
+            PinConnection2(stick1, origin, Point(0, 0, 0), Point(0, 0, 0), Alignment(0, 0, 0),
+                           Alignment(0, 0, 0)),
+            FixedConnection2(origin, Point(fix_x, fix_y, 0), Alignment(0, 0, 0)),
         ]
         Assembly.__init__(self, con_lst, comp_lst)
 
@@ -892,9 +938,10 @@ class StickSnake(Assembly):
                                                                         Point(redp_comp.length, 0, 0))]
         return combined_asm
 
-# origin_assembly = return_prototype()
-# print(is_vaild_assembleA(origin_assembly))
-
+origin_assembly = create_assemblyA()
+print(is_vaild_assembleA(origin_assembly,debug_mode=True))
+curve = get_assembly_curve(origin_assembly,plot_path=r"C:\Users\A\Desktop\temp",number_of_points=72,normelaize_curve=False,save_images=True)
+curve.plot(save_image=True)
 
 # database, curve_database = create_assemblyA_database(2,2)
 #

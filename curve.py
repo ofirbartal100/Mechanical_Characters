@@ -5,6 +5,7 @@ from sklearn.decomposition import PCA
 from matplotlib import pyplot as plt
 from numpy import random
 import json
+import matplotlib.pyplot as plt
 
 class Curve:
     '''
@@ -119,6 +120,16 @@ class Curve:
         c['features'] = self.features.tolist()
         return json.dumps(c)
 
+    def plot(self,path = r"C:\Users\A\Desktop\temp",save_image = False):
+        # evenly sampled time at 200ms intervals
+        xs = [i[0] for i in self.points]
+        ys = [i[1] for i in self.points]
+
+        # red dashes, blue squares and green triangles
+        plt.plot(xs, ys)
+        if save_image:
+            plt.savefig(path + fr"\curve.png")
+        plt.show()
 
 #
 # def random_noise():

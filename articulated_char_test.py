@@ -5,7 +5,7 @@ figure = StickSnake()
 figure.update_state2()
 figure.plot_assembly()
 
-driving_mech = return_prototype()
+driving_mech = return_prototype2()
 driving_mech.update_state2()
 driving_mech.plot_assembly()
 
