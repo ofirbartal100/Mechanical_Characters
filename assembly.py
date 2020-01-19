@@ -5,6 +5,7 @@ from collections import defaultdict
 from scipy.optimize import minimize
 from matplotlib import pyplot as plt
 import dill as pickle
+from sklearn.decomposition import PCA
 # import pickle
 
 import random
@@ -520,7 +521,7 @@ def get_assembly_curve(assembly, number_of_points=360, plot_path=None, save_imag
             assembly_curve.append(assembly.get_red_point_position())
             if plot_path:
                 assembly.plot_assembly(plot_path=plot_path, image_number=i, save_images=save_images)
-    return Curve(normalize_curve(assembly_curve, assembly.anchor) if normelaize_curve else assembly_curve)
+    return Curve(normalize_curve2(assembly_curve, assembly.anchor) if normelaize_curve else assembly_curve)
 
 
 def get_assembly_curve_parallel(assembly, number_of_points=360):
@@ -768,6 +769,19 @@ class AssemblyA_Sampler:
 def normalize_curve(curve, anchor):
     return ([list(sample - anchor) for sample in curve])
 
+
+
+def normalize_curve2(curve_points):
+    x_com = np.mean(curve_points, axis=0)
+    centered = curve_points - x_com
+    pca = PCA(n_components=2)
+    pca.fit(centered)
+    v_max = pca.components_[0]
+    l_max = pca.explained_variance_[0]
+    projected_points = pca.transform(centered)
+    zeros = np.zeros((len(projected_points),1),dtype=np.float64)
+    np.concatenate([projected_points,zeros],axis=1)
+    return np.concatenate([projected_points,zeros],axis=1)/l_max
 
 def plot_circle(ax, x, y, r):
     theta = np.linspace(0, 2 * np.pi, 100)
