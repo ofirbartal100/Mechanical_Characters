@@ -6,14 +6,19 @@ import dill
 # print(is_vaild_assembleA(a))
 
 # sample = AssemblyA_Sampler()
-# sample.create_assemblyA_database(10,num_of_samples_around=10, debug_mode=True)
-# database, curve_databas  = sample.get_database(), sample.get_curve_database()
-# print(len(database))
-# print(len(curve_databas))
-# sample.save(r"C:\Users\A\Desktop\temp")
-#
+path = r"C:\Users\A\Desktop\temp"
+input_file = open(path+r"\sampler_500", 'rb')
+sample = dill.load(input_file)
+sample.create_assemblyA_database(1000, num_of_samples_around=10, debug_mode=True)
+database, curve_databas  = sample.get_database(), sample.get_curve_database()
+print(len(database))
+print(len(curve_databas))
+sample.save(r"C:\Users\A\Desktop\temp")
+
 # for i,ass in enumerate(database):
 #     ass.plot_assembly(plot_path =r"C:\Users\A\Desktop\temp" , image_number = i,save_images = True)
+exit()
+
 
 path = r"C:\Users\A\Desktop\temp"
 input_file = open(path+r"\sampler", 'rb')
@@ -27,9 +32,8 @@ for k in all_dist:
     print(all_dist[k])
 
 print("-------")
-# print(db_closest_curve)
 print(all_dist[db_closest_curve])
-closest_assembly.plot_assembly(plot_path =path , image_number = 1000,save_images = True)
+closest_assembly.plot_assembly(plot_path =path , image_number = "closest_assembly",save_images = True)
 
 figure = StickSnake()
 figure.update_state2()
@@ -41,7 +45,7 @@ combined = figure.add_driving_assembly(closest_assembly)
 combined.update_state2()
 combined.plot_assembly(plot_path=path,
                        save_images=True,
-                       image_number=2000)
+                       image_number="combined")
 
 print(combined.describe_assembly())
 

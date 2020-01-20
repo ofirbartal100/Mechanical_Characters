@@ -5,6 +5,7 @@ from collections import defaultdict
 from scipy.optimize import minimize
 from matplotlib import pyplot as plt
 import dill as pickle
+from sklearn.decomposition import PCA
 # import pickle
 
 import random
@@ -341,8 +342,14 @@ def sample_radius_from_current(radius, diff_val=2, min_radius=0.1):
     return round(max(min_radius, radius + random.uniform(-diff_val, diff_val)), 2)
 
 
-def sample_gear_parameters_from_current(gear_param, diff_val=2):
-    gear_param["radius"] = round(sample_radius_from_current(gear_param["radius"], diff_val=diff_val), 2)
+def sample_gear_parameters_from_current(gear_param, diff_val=2,second_gear = False, gear1_radius = 0.0):
+    if second_gear:
+        assert gear1_radius>0
+        power = random.choice([-1,0,1])
+        num =random.choice([2,3])
+        gear_param["radius"] = gear1_radius*(num**power)
+    else:
+        gear_param["radius"] = round(sample_radius_from_current(gear_param["radius"], diff_val=diff_val), 2)
     return gear_param
 
 
@@ -393,7 +400,8 @@ def sample_from_cur_assemblyA(assemblyA, gear_diff_val=0.5, stick_diff_val=0.5, 
                                                                               gear_diff_val)
     if random.random() < random_sample:
         config["gear2_init_parameters"] = sample_gear_parameters_from_current(config["gear2_init_parameters"],
-                                                                              gear_diff_val)
+                                                                              gear_diff_val,second_gear = True,\
+                                                                              gear1_radius = config["gear1_init_parameters"]["radius"])
     if random.random() < random_sample:
         config["stick1_init_parameters"] = sample_stick_parameters_from_current(config["stick1_init_parameters"],
                                                                                 stick_diff_val)
@@ -451,6 +459,7 @@ def points_distance(point1, point2):
 
 def is_vaild_assembleA(assemblyA, debug_mode=False):
     config = assemblyA.config
+
 
     if config["stick1_init_parameters"]["length"] < config["stick1_stick2_joint_location"][0]:
         if debug_mode:
@@ -518,7 +527,7 @@ def get_assembly_curve(assembly, number_of_points=360, plot_path=None, save_imag
             assembly_curve.append(assembly.get_red_point_position())
             if plot_path:
                 assembly.plot_assembly(plot_path=plot_path, image_number=i, save_images=save_images)
-    return Curve(normalize_curve(assembly_curve, assembly.anchor) if normelaize_curve else assembly_curve)
+    return Curve(normalize_curve2(assembly_curve, assembly.anchor) if normelaize_curve else assembly_curve)
 
 
 def get_assembly_curve_parallel(assembly, number_of_points=360):
@@ -550,6 +559,45 @@ def is_dissimilar(curve, database, gamma=1):
         if Curve.normA(curve, database_curve) < gamma:
             return False
     return True
+
+def return_prototype2():
+    config = dict()
+
+    config["gear1_init_parameters"] = {"radius": 4}
+    config["stick1_init_parameters"] = {"length": 16}
+    config["gear2_init_parameters"] = {"radius": 2}
+    config["stick2_init_parameters"] = {"length": 9}
+
+    # config["gear1_init_parameters"] = {"radius": 2, "center": Point(0.0, 0.0, 0.0), "orientation": Alignment(0, 0, 0)}
+    # config["stick1_init_parameters"] = {"length": 6, "edge": Point(0, 0, 0), "orientation": Alignment(0, 0, 0)}
+    # config["gear2_init_parameters"] = {"radius": 1, "center": Point(6.0, 0.0, 0.0), "orientation": Alignment(0, 0, 0)}
+    # config["stick2_init_parameters"] = {"length": 4, "edge": Point(0.0, 0.0, 0.0), "orientation": Alignment(0, 0, 0)}
+
+    # for fixed
+    # config["gear1_fixed_position"] = Point(0.0, 0.0, 0.0)
+    # config["gear2_fixed_position"] = Point(6.0, 0.0, 0.0)
+
+    # for fixed2
+    config["gear1_fixed_position"] = np.array([0, 0, 0], dtype=float)
+    config["gear2_fixed_position"] = np.array([11, 0, 0], dtype=float)
+
+    # for fixed
+    # config["gear1_fixed_orientation"] = Alignment(0, 0, 0)
+    # config["gear2_fixed_orientation"] = Alignment(0, 0, 0)
+
+    # for fixed2
+    config["gear1_fixed_orientation"] = np.array([0, 0, 0.5 * np.pi], dtype=float)
+    config["gear2_fixed_orientation"] = np.array([0, 0, 0.5 * np.pi], dtype=float)
+
+    config["gear1_stick1_joint_location"] = np.array([4, 0, 0], dtype=float)
+    config["stick1_gear1_joint_location"] = np.array([0, 0, 0], dtype=float)
+    config["gear2_stick2_joint_location"] = np.array([0, 0.5, 0], dtype=float)
+    config["stick2_gear2_joint_location"] = np.array([0, 0, 0], dtype=float)
+
+    config["stick1_stick2_joint_location"] = np.array([10.5, 0, 0], dtype=float)
+    config["stick2_stick1_joint_location"] = np.array([config["stick2_init_parameters"]["length"], 0, 0], dtype=float)
+
+    return AssemblyA(config)
 
 
 def return_prototype():
@@ -586,31 +634,31 @@ def return_prototype():
     config["gear2_stick2_joint_location"] = np.array([1, 0, 0], dtype=float)
     config["stick2_gear2_joint_location"] = np.array([0, 0, 0], dtype=float)
 
-    config["stick1_stick2_joint_location"] = np.array([9, 0, 0], dtype=float)
+    config["stick1_stick2_joint_location"] = np.array([12, 0, 0], dtype=float)
     config["stick2_stick1_joint_location"] = np.array([config["stick2_init_parameters"]["length"], 0, 0], dtype=float)
 
     return AssemblyA(config)
 
 
 def create_assemblyA(gear_diff_val=1, stick_diff_val=1, position_diff_val=1):
-    new_assembly = sample_from_cur_assemblyA(return_prototype(), gear_diff_val=gear_diff_val,
+    new_assembly = sample_from_cur_assemblyA(return_prototype2(), gear_diff_val=gear_diff_val,
                                              stick_diff_val=stick_diff_val, position_diff_val=position_diff_val,
                                              random_sample=0.8)
     while not is_vaild_assembleA(new_assembly):
         # print("not valid assembly")
-        new_assembly = sample_from_cur_assemblyA(return_prototype(), gear_diff_val=gear_diff_val,
+        new_assembly = sample_from_cur_assemblyA(return_prototype2(), gear_diff_val=gear_diff_val,
                                                  stick_diff_val=stick_diff_val, position_diff_val=position_diff_val,
                                                  random_sample=0.8)
     return new_assembly
 
 
 def create_random_assembly_A(gear_diff_val=1, stick_diff_val=1, position_diff_val=1):
-    new_assembly = sample_from_cur_assemblyA(return_prototype(), gear_diff_val=gear_diff_val,
+    new_assembly = sample_from_cur_assemblyA(return_prototype2(), gear_diff_val=gear_diff_val,
                                              stick_diff_val=stick_diff_val, position_diff_val=position_diff_val,
                                              random_sample=0.8)
     while not is_vaild_assembleA(new_assembly):
         # print("not valid assembly")
-        new_assembly = sample_from_cur_assemblyA(return_prototype(), gear_diff_val=gear_diff_val,
+        new_assembly = sample_from_cur_assemblyA(return_prototype2(), gear_diff_val=gear_diff_val,
                                                  stick_diff_val=stick_diff_val, position_diff_val=position_diff_val,
                                                  random_sample=0.8)
     return new_assembly
@@ -697,23 +745,23 @@ class AssemblyA_Sampler:
     def get_curve_database(self):
         return self.curve_database
 
-    def get_closest_curve(self, curve, get_all_dis=False):
+    def get_closest_curve(self, curve, get_all_dis = False):
 
         min_dis = curve.normA(curve, self.curve_database[0])
         min_curve = self.curve_database[0]
         closest_assembly = self.database[0]
         if get_all_dis:
             all_dist = {}
-        for i, db_curve in enumerate(self.curve_database[1:]):
+        for i,db_curve in enumerate(self.curve_database[1:]):
             cur_dis = curve.normA(curve, db_curve)
             if get_all_dis:
                 all_dist[db_curve] = cur_dis
             if cur_dis < min_dis:
-                closest_assembly = self.database[i + 1]
+                closest_assembly = self.database[i+1]
                 min_dis = cur_dis
                 min_curve = db_curve
         # return min_curve.to_json(s)
-        return min_curve, closest_assembly, all_dist if get_all_dis else min_curve
+        return min_curve,closest_assembly,all_dist if get_all_dis else None
 
     def save(self, path=r"C:\Users\A\Desktop\temp"):
         with open(path + rf"\sampler", "wb") as handle:
@@ -727,6 +775,19 @@ class AssemblyA_Sampler:
 def normalize_curve(curve, anchor):
     return ([list(sample - anchor) for sample in curve])
 
+
+
+def normalize_curve2(curve_points):
+    x_com = np.mean(curve_points, axis=0)
+    centered = curve_points - x_com
+    pca = PCA(n_components=2)
+    pca.fit(centered)
+    v_max = pca.components_[0]
+    l_max = pca.explained_variance_[0]
+    projected_points = pca.transform(centered)
+    zeros = np.zeros((len(projected_points),1),dtype=np.float64)
+    np.concatenate([projected_points,zeros],axis=1)
+    return np.concatenate([projected_points,zeros],axis=1)/l_max
 
 def plot_circle(ax, x, y, r):
     theta = np.linspace(0, 2 * np.pi, 100)
@@ -751,6 +812,7 @@ class AssemblyA(Assembly):
                            Gear(**config["gear2_init_parameters"]), Stick(**config["stick2_init_parameters"]), Gear(1),
                            Gear(1)]
         alignment = np.array([0, 0, 0.5 * np.pi])
+
         self.connections = [PhaseConnection2(self.components[0], self.actuator),
                             PhaseConnection2(self.components[0], self.components[2]),
 
@@ -923,9 +985,10 @@ class StickSnake(Assembly):
                                                                         Alignment(0, 0, 0))]
         return combined_asm
 
-# origin_assembly = return_prototype()
-# print(is_vaild_assembleA(origin_assembly))
-
+origin_assembly = create_assemblyA()
+print(is_vaild_assembleA(origin_assembly,debug_mode=True))
+curve = get_assembly_curve(origin_assembly,plot_path=r"C:\Users\A\Desktop\temp",number_of_points=72,normelaize_curve=False,save_images=True)
+curve.plot(save_image=True)
 
 # database, curve_database = create_assemblyA_database(2,2)
 #

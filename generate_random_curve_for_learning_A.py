@@ -14,7 +14,7 @@ def generate_random_curve(number_of_points=360, gear_diff_val=1, stick_diff_val=
     # end = time.time()
     # print("phase 1 {}".format(end-start))
 
-    assembly_curve = normalize_curve(assembly_curve, random_assembly_a.anchor)
+    assembly_curve = normalize_curve2(assembly_curve, random_assembly_a.anchor)
 
     c = Curve(assembly_curve)
     # output curve to stdout for the C# to read
