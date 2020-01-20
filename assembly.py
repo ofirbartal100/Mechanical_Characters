@@ -53,7 +53,7 @@ class Assembly:
         """
         return Assembly(self.con_list + other_asm.con_list,
                         components=self.components + other_asm.components,
-                        actuator=self.actuator or other_asm.actuator,
+                        actuator=other_asm.actuator or self.actuator,
                         iters=self.iterations,
                         tol=self.tolerance,
                         plot_newt=self.plot_newt)
@@ -797,6 +797,11 @@ class AssemblyA(Assembly):
         :return: 3-dim position of the assembly red point in global axis
         """
         return self.red_point_component.get_global_position(np.array([self.red_point_component.length, 0, 0]))
+
+    def translate_assembly(self, point):
+        for con in self.con_list:
+            if isinstance(con, FixedConnection2):
+                con.fixed_position = con.fixed_position + point
 
 
 class StickFigure(Assembly):
