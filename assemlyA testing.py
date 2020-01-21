@@ -1,15 +1,19 @@
-import json
 
 from assembly import *
 import dill
+
+
 # a = return_prototype()
 # print(is_vaild_assembleA(a))
-
 # sample = AssemblyA_Sampler()
+
 path = r"C:\Users\A\Desktop\temp"
-input_file = open(path+r"\sampler_500", 'rb')
+
+input_file = open(path+r"\sampler_200", 'rb')
 sample = dill.load(input_file)
-sample.create_assemblyA_database(1000, num_of_samples_around=10, debug_mode=True)
+
+sample.create_assemblyA_database(400, num_of_samples_around=10, debug_mode=True, second_type=False)
+sample.create_assemblyA_database(100, num_oyouf_samples_around=10, debug_mode=True, second_type=True)
 database, curve_databas  = sample.get_database(), sample.get_curve_database()
 print(len(database))
 print(len(curve_databas))

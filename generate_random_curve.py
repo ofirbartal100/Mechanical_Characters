@@ -30,7 +30,7 @@ def generate_random_curve(number_of_curves, number_of_points=360, curve_path=Non
 
         assembly_curve = get_assembly_curve(origin_assembly, number_of_points=number_of_points, \
                                             plot_path=plot_path, save_images=save_images)
-        assembly_curve = normalize_curve2(assembly_curve, origin_assembly.anchor)
+        assembly_curve = normalize_curve2(assembly_curve)
 
         json.dump(assembly_curve, open(curve_path + rf"\curve_{i}.j", "w"))
 
@@ -63,7 +63,7 @@ def generate_random_curve2(number_of_curves, number_of_points=360, curve_path=r'
     for i in range(int(number_of_curves)):
         # origin_assembly = create_assemblyA()
         assembly_curve = get_assembly_curve(origin_assembly, number_of_points=360)
-        assembly_curve = normalize_curve2(assembly_curve, origin_assembly.anchor)
+        assembly_curve = normalize_curve2(assembly_curve)
         json.dump(assembly_curve, open(curve_path + rf"\curve_{i}.j", "w"))
 
 
