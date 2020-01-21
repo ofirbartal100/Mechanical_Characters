@@ -6,7 +6,7 @@ from scipy.optimize import minimize
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
 from tqdm import tqdm
-# import pickle
+from sampler import *
 
 import random
 from configuration import *
@@ -95,7 +95,7 @@ class Assembly:
         ax.set_aspect('equal')
         # fig.show()
         if plot_path and save_images:
-            plt.savefig(plot_path + fr"{image_number}")
+            plt.savefig(pjoin(plot_path, fr"{image_number}"))
         return (fig, ax)
 
     def get_assembly_constraint(self):
@@ -342,398 +342,6 @@ class Assembly:
         return comp
 
 
-def sample_from_cur_assemblyA(assemblyA, gear_diff_val=0.5, stick_diff_val=0.5, position_diff_val=0.5, random_sample=1,second_type=False):
-    config = assemblyA.config
-
-    if random.random() < random_sample:
-        config["gear1_init_parameters"] = sample_gear_parameters_from_current(config["gear1_init_parameters"],
-                                                                              gear_diff_val)
-    if random.random() < random_sample:
-        config["gear2_init_parameters"] = sample_gear_parameters_from_current(config["gear2_init_parameters"],
-                                                                              gear_diff_val,second_gear = True,\
-                                                                              gear1_radius = config["gear1_init_parameters"]["radius"],second_type=second_type)
-    if random.random() < random_sample:
-        config["stick1_init_parameters"] = sample_stick_parameters_from_current(config["stick1_init_parameters"],
-                                                                                stick_diff_val)
-
-    if random.random() < random_sample:
-        config["gear1_stick1_joint_location"] = sample_position(config["gear1_stick1_joint_location"],
-                                                                position_diff_val, num_of_axis=2)
-
-    if random.random() < random_sample:
-        config["gear2_stick2_joint_location"] = sample_position(config["gear2_stick2_joint_location"],
-                                                                position_diff_val, num_of_axis=2)
-    if random.random() < random_sample:
-        config["stick1_stick2_joint_location"] = sample_position(config["stick1_stick2_joint_location"],
-                                                                 position_diff_val, num_of_axis=1,
-                                                                 enable_negative=False)
-    if random.random() < random_sample:
-        config["stick2_stick1_joint_location"] = (config["stick2_init_parameters"]["length"], 0, 0)
-
-    if random.random() < random_sample:
-        config["gear1_fixed_position"] = sample_position(config["gear1_fixed_position"], position_diff_val,
-                                                         num_of_axis=2)
-    if random.random() < random_sample:
-        config["gear2_fixed_position"] = sample_position(config["gear2_fixed_position"], position_diff_val,
-                                                         num_of_axis=2)
-    if random.random() < random_sample:
-        radius1 = config["gear1_init_parameters"]["radius"]
-        radius2 = config["gear2_init_parameters"]["radius"]
-        gears_dis = points_distance(config["gear1_fixed_position"], config["gear2_fixed_position"])
-        stick1_part_len = config["stick1_stick2_joint_location"][0]
-
-        stick2_len_params = (radius1, radius2, gears_dis, stick1_part_len)
-        config["stick2_init_parameters"] = sample_stick_parameters_from_current(config["stick2_init_parameters"],
-                                                                                stick_diff_val, stick2_len_params)
-    return AssemblyA(config)
-
-def sample_radius_from_current(radius, diff_val=2, min_radius=0.1):
-    if radius < 0.5:
-        return round(max(min_radius, radius + random.uniform(-diff_val * radius, diff_val)), 2)
-    return round(max(min_radius, radius + random.uniform(-diff_val, diff_val)), 2)
-
-
-def sample_gear_parameters_from_current(gear_param, diff_val=2,second_gear = False, gear1_radius = 0.0,second_type = False):
-    if second_gear:
-        assert gear1_radius>0
-        power = random.choice([-1,0])
-        num =random.choice([2,3])
-        if second_type:
-            power = -1
-            num = 2
-        gear_param["radius"] = gear1_radius*(num**power)
-    else:
-        gear_param["radius"] = round(sample_radius_from_current(gear_param["radius"], diff_val=diff_val), 2)
-    return gear_param
-
-
-def sample_length_from_current(length, diff_val=2, min_length=0.1):
-    if length < 0.5:
-        return round(max(min_length, length + random.uniform(-diff_val * length, diff_val)), 2)
-    return round(max(min_length, length + random.uniform(-diff_val, diff_val)), 2)
-
-
-def sample_stick_parameters_from_current(stick_param, diff_val=2, stick2_len_params=None):
-    if stick2_len_params:
-        radius1, radius2, gears_dis, stick1_part_len = stick2_len_params
-        min_val = gears_dis + radius1 + radius2 - stick1_part_len
-        max_val = gears_dis - radius1 + stick1_part_len
-        if min_val < max_val:
-            stick_param["length"] = round(
-                random.uniform(gears_dis + radius1 + radius2 - stick1_part_len, gears_dis - radius1 + stick1_part_len),
-                2)
-            return stick_param
-
-    stick_param["length"] = round(sample_length_from_current(stick_param["length"], diff_val=diff_val), 2)
-    return stick_param
-
-
-def sample_position(joint_location, diff_val=2, num_of_axis=3, enable_negative=True):
-    for i in range(num_of_axis):
-        new_pos = round(joint_location[i] + random.uniform(-diff_val, diff_val), 2)
-        if not enable_negative:
-            while new_pos < 0:
-                new_pos = round(joint_location[i] + random.uniform(-diff_val, diff_val), 2)
-        joint_location[i] = new_pos
-
-    return joint_location
-
-
-def sample_point(point, diff_val=2, num_of_axis=3):
-    vector = point.vector()
-    vector = sample_position(vector, diff_val=diff_val, num_of_axis=num_of_axis)
-    return Point(*vector)
-
-
-def sample_from_cur_assemblyA(assemblyA, gear_diff_val=0.5, stick_diff_val=0.5, position_diff_val=0.5, random_sample=1):
-    config = assemblyA.config
-
-    if random.random() < random_sample:
-        config["gear1_init_parameters"] = sample_gear_parameters_from_current(config["gear1_init_parameters"],
-                                                                              gear_diff_val)
-    if random.random() < random_sample:
-        config["gear2_init_parameters"] = sample_gear_parameters_from_current(config["gear2_init_parameters"],
-                                                                              gear_diff_val, second_gear=True, \
-                                                                              gear1_radius=
-                                                                              config["gear1_init_parameters"]["radius"])
-    if random.random() < random_sample:
-        config["stick1_init_parameters"] = sample_stick_parameters_from_current(config["stick1_init_parameters"],
-                                                                                stick_diff_val)
-
-    if random.random() < random_sample:
-        config["gear1_stick1_joint_location"] = sample_position(config["gear1_stick1_joint_location"],
-                                                                position_diff_val, num_of_axis=2)
-
-    if random.random() < random_sample:
-        config["gear2_stick2_joint_location"] = sample_position(config["gear2_stick2_joint_location"],
-                                                                position_diff_val, num_of_axis=2)
-    if random.random() < random_sample:
-        config["stick1_stick2_joint_location"] = sample_position(config["stick1_stick2_joint_location"],
-                                                                 position_diff_val, num_of_axis=1,
-                                                                 enable_negative=False)
-    if random.random() < random_sample:
-        config["stick2_stick1_joint_location"] = (config["stick2_init_parameters"]["length"], 0, 0)
-
-    # for fixed :
-    # config["gear1_fixed_position"] = sample_point(config["gear1_fixed_position"], position_diff_val, num_of_axis=1)
-    # config["gear2_fixed_position"] = sample_point(config["gear2_fixed_position"], position_diff_val, num_of_axis=1)
-
-    # for fixed2 :
-    if random.random() < random_sample:
-        config["gear1_fixed_position"] = sample_position(config["gear1_fixed_position"], position_diff_val,
-                                                         num_of_axis=2)
-    if random.random() < random_sample:
-        config["gear2_fixed_position"] = sample_position(config["gear2_fixed_position"], position_diff_val,
-                                                         num_of_axis=2)
-    if random.random() < random_sample:
-        radius1 = config["gear1_init_parameters"]["radius"]
-        radius2 = config["gear2_init_parameters"]["radius"]
-        gears_dis = points_distance(config["gear1_fixed_position"], config["gear2_fixed_position"])
-        stick1_part_len = config["stick1_stick2_joint_location"][0]
-
-        stick2_len_params = (radius1, radius2, gears_dis, stick1_part_len)
-        config["stick2_init_parameters"] = sample_stick_parameters_from_current(config["stick2_init_parameters"],
-                                                                                stick_diff_val, stick2_len_params)
-    return AssemblyA(config)
-
-
-def points_distance(point1, point2):
-    point1_vector = point1
-    point2_vector = point2
-    dis = 0
-    for i in range(len(point1_vector)):
-        dis += (point1_vector[i] - point2_vector[i]) ** 2
-    return round(dis ** 0.5, 2)
-
-
-def is_vaild_assembleA(assemblyA, debug_mode=False):
-    config = assemblyA.config
-
-    if config["stick1_init_parameters"]["length"] < config["stick1_stick2_joint_location"][0]:
-        if debug_mode:
-            print(
-                f"stick length {config['stick1_init_parameters']['length']} and joint location is in {config['stick1_stick2_joint_location'][0]}")
-        return False
-
-    if config["stick2_init_parameters"]['length'] < config["stick2_stick1_joint_location"][0]:
-        if debug_mode:
-            print(
-                f"stick length {config['stick2_init_parameters']['length']} and joint location is in {config['stick2_stick1_joint_location'][0]}")
-
-        return False
-
-    joint_x1, joint_y1 = config["gear1_stick1_joint_location"][:2]
-    center_x1, center_y1 = (0, 0)
-    radius1 = config["gear1_init_parameters"]["radius"]
-
-    if (joint_x1 - center_x1) ** 2 + (joint_y1 - center_y1) ** 2 > radius1 ** 2:
-        if debug_mode:
-            print(
-                f"center gear 1 {center_x1, center_y1} with radius {radius1} and joint location is in {joint_x1, joint_y1}")
-        return False
-
-    joint_x2, joint_y2 = config["gear2_stick2_joint_location"][:2]
-    center_x2, center_y2 = (0, 0)
-    radius2 = config["gear2_init_parameters"]["radius"]
-    if (joint_x2 - center_x2) ** 2 + (joint_y2 - center_y2) ** 2 > radius2 ** 2:
-        if debug_mode:
-            print(
-                f"center gear 2 {center_x2, center_y2} with radius {radius2} and joint location is in {joint_x2, joint_y2}")
-        return False
-
-    gears_dis = points_distance(config["gear1_fixed_position"], config["gear2_fixed_position"])
-    stick2_len = config["stick2_init_parameters"]["length"]
-    stick1_part_len = config["stick1_stick2_joint_location"][0]
-
-    if (gears_dis + radius1 + radius2) >= stick2_len + stick1_part_len:
-        if debug_mode:
-            print(
-                f"gears distance is {gears_dis} with radius {radius1, radius2} and max length between sticks is {stick2_len + stick1_part_len}")
-            print("sticks too short")
-        return False
-
-    if gears_dis - radius1 + stick1_part_len < stick2_len:
-        if debug_mode:
-            print(
-                f"gears distance is {gears_dis} with radius1 {radius1} and stick1 len is {stick1_part_len} and stick2 len {stick2_len}")
-            print("sticks too long")
-        return False
-    return True
-
-
-def is_dissimilar(curve, database, gamma=1):
-    for database_curve in database:
-        if Curve.normA(curve, database_curve) < gamma:
-            return False
-    return True
-
-
-def get_assembly_curve(assembly, number_of_points=360, plot_path=None, save_images=False, normelaize_curve=False,
-                       user_fig=None):
-    assembly_curve = []
-    actuator = assembly.actuator
-    for i in tqdm(range(number_of_points)):
-        actuator.turn(360 / number_of_points)
-        result = assembly.update_state2()
-        if result:
-            assembly_curve.append(assembly.get_red_point_position())
-            if plot_path:
-                assembly.plot_assembly(plot_path=plot_path, image_number=i, save_images=save_images, user_fig=None)
-    return Curve(normalize_curve2(assembly_curve) if normelaize_curve else assembly_curve)
-
-
-def get_assembly_curve_parallel(assembly, number_of_points=360):
-    import multiprocessing
-    from joblib import Parallel, delayed
-    num_cores = multiprocessing.cpu_count()
-    import time
-
-    def f(i, orig):
-        # cpy = AssemblyA(orig.config)
-        orig.actuator.set(i * (360.0 / number_of_points))
-        result = orig.update_state2()
-        if result:
-            return orig.get_red_point_position()
-        return [0, 0, i * (360.0 / number_of_points)]
-
-    # print("started")
-    start = time.time()
-    # x0 = assembly.update_state3()
-    # assembly_curve = Parallel(n_jobs=num_cores)(delayed(f)(i, assembly) for i in range(number_of_points))
-    assembly_curve = [f(i, assembly) for i in range(number_of_points)]
-    end = time.time()
-    # print(end-start)
-    return Curve(assembly_curve)
-
-
-
-
-def return_prototype3():
-    config = dict()
-
-    config["gear1_init_parameters"] = {"radius": 6}
-    config["stick1_init_parameters"] = {"length": 18}
-    config["gear2_init_parameters"] = {"radius": 3}
-    config["stick2_init_parameters"] = {"length": 12}
-
-    config["gear1_fixed_position"] = np.array([0, 0, 0], dtype=float)
-    config["gear2_fixed_position"] = np.array([12, 0, 0], dtype=float)
-
-    config["gear1_fixed_orientation"] = np.array([0, 0, 0.5 * np.pi], dtype=float)
-    config["gear2_fixed_orientation"] = np.array([0, 0, 0.5 * np.pi], dtype=float)
-
-    config["gear1_stick1_joint_location"] = np.array([0, 5, 0], dtype=float)
-    config["stick1_gear1_joint_location"] = np.array([0, 0, 0], dtype=float)
-    config["gear2_stick2_joint_location"] = np.array([0, 2.5, 0], dtype=float)
-    config["stick2_gear2_joint_location"] = np.array([0, 0, 0], dtype=float)
-
-    config["stick1_stick2_joint_location"] = np.array([12, 0, 0], dtype=float)
-    config["stick2_stick1_joint_location"] = np.array([config["stick2_init_parameters"]["length"], 0, 0], dtype=float)
-
-    return AssemblyA(config)
-
-
-def return_prototype2():
-    config = dict()
-
-    config["gear1_init_parameters"] = {"radius": 4}
-    config["stick1_init_parameters"] = {"length": 16}
-    config["gear2_init_parameters"] = {"radius": 2}
-    config["stick2_init_parameters"] = {"length": 9}
-
-    config["gear1_fixed_position"] = np.array([0, 0, 0], dtype=float)
-    config["gear2_fixed_position"] = np.array([11, 0, 0], dtype=float)
-
-    config["gear1_fixed_orientation"] = np.array([0, 0, 0.5 * np.pi], dtype=float)
-    config["gear2_fixed_orientation"] = np.array([0, 0, 0.5 * np.pi], dtype=float)
-
-    config["gear1_stick1_joint_location"] = np.array([4, 0, 0], dtype=float)
-    config["stick1_gear1_joint_location"] = np.array([0, 0, 0], dtype=float)
-    config["gear2_stick2_joint_location"] = np.array([0, 0.5, 0], dtype=float)
-    config["stick2_gear2_joint_location"] = np.array([0, 0, 0], dtype=float)
-
-    config["stick1_stick2_joint_location"] = np.array([10.5, 0, 0], dtype=float)
-    config["stick2_stick1_joint_location"] = np.array([config["stick2_init_parameters"]["length"], 0, 0], dtype=float)
-
-    return AssemblyA(config)
-
-
-def return_prototype():
-    config = dict()
-
-    config["gear1_init_parameters"] = {"radius": 5}
-    config["stick1_init_parameters"] = {"length": 14}
-    config["gear2_init_parameters"] = {"radius": 2}
-    config["stick2_init_parameters"] = {"length": 8}
-
-    config["gear1_fixed_position"] = np.array([0, 0, 0], dtype=float)
-    config["gear2_fixed_position"] = np.array([10, 0, 0], dtype=float)
-
-    config["gear1_fixed_orientation"] = np.array([0, 0, 0.5 * np.pi], dtype=float)
-    config["gear2_fixed_orientation"] = np.array([0, 0, 0.5 * np.pi], dtype=float)
-
-    config["gear1_stick1_joint_location"] = np.array([4, 0, 0], dtype=float)
-    config["stick1_gear1_joint_location"] = np.array([0, 0, 0], dtype=float)
-    config["gear2_stick2_joint_location"] = np.array([1, 0, 0], dtype=float)
-    config["stick2_gear2_joint_location"] = np.array([0, 0, 0], dtype=float)
-
-    config["stick1_stick2_joint_location"] = np.array([12, 0, 0], dtype=float)
-    config["stick2_stick1_joint_location"] = np.array([config["stick2_init_parameters"]["length"], 0, 0], dtype=float)
-
-    return AssemblyA(config)
-
-
-def create_assemblyA(gear_diff_val=1, stick_diff_val=1, position_diff_val=1,second_type=False):
-    new_assembly = sample_from_cur_assemblyA(return_prototype3() if second_type else return_prototype2(), gear_diff_val=gear_diff_val,
-                                             stick_diff_val=stick_diff_val, position_diff_val=position_diff_val,
-                                             random_sample=0.8,second_type=second_type)
-    while not is_vaild_assembleA(new_assembly):
-        new_assembly = sample_from_cur_assemblyA(return_prototype3() if second_type else return_prototype2(), gear_diff_val=gear_diff_val,
-                                                 stick_diff_val=stick_diff_val, position_diff_val=position_diff_val,
-                                                 random_sample=0.8,second_type=second_type)
-    return new_assembly
-
-
-def create_random_assembly_A(gear_diff_val=1, stick_diff_val=1, position_diff_val=1):
-    new_assembly = sample_from_cur_assemblyA(return_prototype2(), gear_diff_val=gear_diff_val,
-                                             stick_diff_val=stick_diff_val, position_diff_val=position_diff_val,
-                                             random_sample=0.8)
-    while not is_vaild_assembleA(new_assembly):
-        # print("not valid assembly")
-        new_assembly = sample_from_cur_assemblyA(return_prototype2(), gear_diff_val=gear_diff_val,
-                                                 stick_diff_val=stick_diff_val, position_diff_val=position_diff_val,
-                                                 random_sample=0.8)
-    return new_assembly
-
-
-
-
-
-def normalize_curve(curve, anchor):
-    return ([list(sample - anchor) for sample in curve])
-
-
-def normalize_curve2(curve_points):
-    x_com = np.mean(curve_points, axis=0)
-    centered = curve_points - x_com
-    pca = PCA(n_components=2)
-    pca.fit(centered)
-    projected_points = pca.transform(centered)
-    l_max = np.max(np.abs(projected_points))
-    zeros = np.zeros((len(projected_points),1),dtype=np.float64)
-    return np.concatenate([projected_points,zeros],axis=1)/l_max
-
-
-def plot_circle(ax, x, y, r):
-    theta = np.linspace(0, 2 * np.pi, 100)
-
-    x1 = r * np.cos(theta) + x
-    x2 = r * np.sin(theta) + y
-
-    ax.plot(x1, x2)
-    ax.set_aspect(1)
-
-
 class AssemblyA(Assembly):
 
     def __init__(self, config):
@@ -772,13 +380,13 @@ class AssemblyA(Assembly):
                                            config["stick1_stick2_joint_location"],
                                            config["stick2_stick1_joint_location"], alignment, alignment)]
 
-        self.red_point_component = self.components[1]
         anchor = []
 
         for axis_1, axis_2 in zip(config["gear1_fixed_position"], config["gear2_fixed_position"]):
             anchor.append(round((axis_1 + axis_2) / 2, 2))
         self.anchor = np.array(anchor)
         Assembly.__init__(self, self.connections, self.components, self.actuator)
+        self.red_point_component = self.components[1]
 
     def get_constraints(self):
         C = lambda s: 0
@@ -911,3 +519,343 @@ class StickSnake(Assembly):
                                                                         Alignment(0, 0, 0))]
         return combined_asm
 
+
+def sample_from_cur_assemblyA(assemblyA, gear_diff_val=0.5, stick_diff_val=0.5, position_diff_val=0.5, random_sample=1,
+                              second_type=False):
+    config = assemblyA.config
+
+    if random.random() < random_sample:
+        config["gear1_init_parameters"] = sample_gear_parameters_from_current(config["gear1_init_parameters"],
+                                                                              gear_diff_val)
+    if random.random() < random_sample:
+        config["gear2_init_parameters"] = sample_gear_parameters_from_current(config["gear2_init_parameters"],
+                                                                              gear_diff_val, second_gear=True, \
+                                                                              gear1_radius=
+                                                                              config["gear1_init_parameters"]["radius"],
+                                                                              second_type=second_type)
+    if random.random() < random_sample:
+        config["stick1_init_parameters"] = sample_stick_parameters_from_current(config["stick1_init_parameters"],
+                                                                                stick_diff_val)
+
+    if random.random() < random_sample:
+        config["gear1_stick1_joint_location"] = sample_position(config["gear1_stick1_joint_location"],
+                                                                position_diff_val, num_of_axis=2)
+
+    if random.random() < random_sample:
+        config["gear2_stick2_joint_location"] = sample_position(config["gear2_stick2_joint_location"],
+                                                                position_diff_val, num_of_axis=2)
+    if random.random() < random_sample:
+        config["stick1_stick2_joint_location"] = sample_position(config["stick1_stick2_joint_location"],
+                                                                 position_diff_val, num_of_axis=1,
+                                                                 enable_negative=False)
+    if random.random() < random_sample:
+        config["stick2_stick1_joint_location"] = (config["stick2_init_parameters"]["length"], 0, 0)
+
+    if random.random() < random_sample:
+        config["gear1_fixed_position"] = sample_position(config["gear1_fixed_position"], position_diff_val,
+                                                         num_of_axis=2)
+    if random.random() < random_sample:
+        config["gear2_fixed_position"] = sample_position(config["gear2_fixed_position"], position_diff_val,
+                                                         num_of_axis=2)
+    if random.random() < random_sample:
+        radius1 = config["gear1_init_parameters"]["radius"]
+        radius2 = config["gear2_init_parameters"]["radius"]
+        gears_dis = points_distance(config["gear1_fixed_position"], config["gear2_fixed_position"])
+        stick1_part_len = config["stick1_stick2_joint_location"][0]
+
+        stick2_len_params = (radius1, radius2, gears_dis, stick1_part_len)
+        config["stick2_init_parameters"] = sample_stick_parameters_from_current(config["stick2_init_parameters"],
+                                                                                stick_diff_val, stick2_len_params)
+    return AssemblyA(config)
+
+
+def sample_radius_from_current(radius, diff_val=2, min_radius=0.1):
+    if radius < 0.5:
+        return round(max(min_radius, radius + random.uniform(-diff_val * radius, diff_val)), 2)
+    return round(max(min_radius, radius + random.uniform(-diff_val, diff_val)), 2)
+
+
+def sample_gear_parameters_from_current(gear_param, diff_val=2, second_gear=False, gear1_radius=0.0, second_type=False):
+    if second_gear:
+        assert gear1_radius > 0
+        power = random.choice([-1, 0])
+        num = random.choice([2, 3])
+        if second_type:
+            power = -1
+            num = 2
+        gear_param["radius"] = gear1_radius * (num ** power)
+    else:
+        gear_param["radius"] = round(sample_radius_from_current(gear_param["radius"], diff_val=diff_val), 2)
+    return gear_param
+
+
+def sample_length_from_current(length, diff_val=2, min_length=0.1):
+    if length < 0.5:
+        return round(max(min_length, length + random.uniform(-diff_val * length, diff_val)), 2)
+    return round(max(min_length, length + random.uniform(-diff_val, diff_val)), 2)
+
+
+def sample_stick_parameters_from_current(stick_param, diff_val=2, stick2_len_params=None):
+    if stick2_len_params:
+        radius1, radius2, gears_dis, stick1_part_len = stick2_len_params
+        min_val = gears_dis + radius1 + radius2 - stick1_part_len
+        max_val = gears_dis - radius1 + stick1_part_len
+        if min_val < max_val:
+            stick_param["length"] = round(
+                random.uniform(gears_dis + radius1 + radius2 - stick1_part_len, gears_dis - radius1 + stick1_part_len),
+                2)
+            return stick_param
+
+    stick_param["length"] = round(sample_length_from_current(stick_param["length"], diff_val=diff_val), 2)
+    return stick_param
+
+
+def sample_position(joint_location, diff_val=2, num_of_axis=3, enable_negative=True):
+    for i in range(num_of_axis):
+        new_pos = round(joint_location[i] + random.uniform(-diff_val, diff_val), 2)
+        if not enable_negative:
+            while new_pos < 0:
+                new_pos = round(joint_location[i] + random.uniform(-diff_val, diff_val), 2)
+        joint_location[i] = new_pos
+
+    return joint_location
+
+
+def sample_point(point, diff_val=2, num_of_axis=3):
+    vector = point.vector()
+    vector = sample_position(vector, diff_val=diff_val, num_of_axis=num_of_axis)
+    return Point(*vector)
+
+
+def points_distance(point1, point2):
+    point1_vector = point1
+    point2_vector = point2
+    dis = 0
+    for i in range(len(point1_vector)):
+        dis += (point1_vector[i] - point2_vector[i]) ** 2
+    return round(dis ** 0.5, 2)
+
+
+def is_vaild_assembleA(assemblyA, debug_mode=False):
+    config = assemblyA.config
+
+    if config["stick1_init_parameters"]["length"] < config["stick1_stick2_joint_location"][0]:
+        if debug_mode:
+            print(
+                f"stick length {config['stick1_init_parameters']['length']} and joint location is in {config['stick1_stick2_joint_location'][0]}")
+        return False
+
+    if config["stick2_init_parameters"]['length'] < config["stick2_stick1_joint_location"][0]:
+        if debug_mode:
+            print(
+                f"stick length {config['stick2_init_parameters']['length']} and joint location is in {config['stick2_stick1_joint_location'][0]}")
+
+        return False
+
+    joint_x1, joint_y1 = config["gear1_stick1_joint_location"][:2]
+    center_x1, center_y1 = (0, 0)
+    radius1 = config["gear1_init_parameters"]["radius"]
+
+    if (joint_x1 - center_x1) ** 2 + (joint_y1 - center_y1) ** 2 > radius1 ** 2:
+        if debug_mode:
+            print(
+                f"center gear 1 {center_x1, center_y1} with radius {radius1} and joint location is in {joint_x1, joint_y1}")
+        return False
+
+    joint_x2, joint_y2 = config["gear2_stick2_joint_location"][:2]
+    center_x2, center_y2 = (0, 0)
+    radius2 = config["gear2_init_parameters"]["radius"]
+    if (joint_x2 - center_x2) ** 2 + (joint_y2 - center_y2) ** 2 > radius2 ** 2:
+        if debug_mode:
+            print(
+                f"center gear 2 {center_x2, center_y2} with radius {radius2} and joint location is in {joint_x2, joint_y2}")
+        return False
+
+    gears_dis = points_distance(config["gear1_fixed_position"], config["gear2_fixed_position"])
+    stick2_len = config["stick2_init_parameters"]["length"]
+    stick1_part_len = config["stick1_stick2_joint_location"][0]
+
+    if (gears_dis + radius1 + radius2) >= stick2_len + stick1_part_len:
+        if debug_mode:
+            print(
+                f"gears distance is {gears_dis} with radius {radius1, radius2} and max length between sticks is {stick2_len + stick1_part_len}")
+            print("sticks too short")
+        return False
+
+    if gears_dis - radius1 + stick1_part_len < stick2_len:
+        if debug_mode:
+            print(
+                f"gears distance is {gears_dis} with radius1 {radius1} and stick1 len is {stick1_part_len} and stick2 len {stick2_len}")
+            print("sticks too long")
+        return False
+    return True
+
+
+def is_dissimilar(curve, database, gamma=1):
+    for database_curve in database:
+        if Curve.normA(curve, database_curve) < gamma:
+            return False
+    return True
+
+
+def get_assembly_curve(assembly, number_of_points=360, plot_path=None, save_images=False, normelaize_curve=False,
+                       user_fig=None):
+    assembly_curve = []
+    actuator = assembly.actuator
+    for i in tqdm(range(number_of_points)):
+        actuator.turn(360 / number_of_points)
+        result = assembly.update_state2()
+        if result:
+            assembly_curve.append(assembly.get_red_point_position())
+            if plot_path:
+                assembly.plot_assembly(plot_path=plot_path, image_number=i, save_images=save_images, user_fig=None)
+    return Curve(normalize_curve2(assembly_curve) if normelaize_curve else assembly_curve)
+
+
+def get_assembly_curve_parallel(assembly, number_of_points=360):
+    import multiprocessing
+    from joblib import Parallel, delayed
+    num_cores = multiprocessing.cpu_count()
+    import time
+
+    def f(i, orig):
+        # cpy = AssemblyA(orig.config)
+        orig.actuator.set(i * (360.0 / number_of_points))
+        result = orig.update_state2()
+        if result:
+            return orig.get_red_point_position()
+        return [0, 0, i * (360.0 / number_of_points)]
+
+    # print("started")
+    start = time.time()
+    # x0 = assembly.update_state3()
+    # assembly_curve = Parallel(n_jobs=num_cores)(delayed(f)(i, assembly) for i in range(number_of_points))
+    assembly_curve = [f(i, assembly) for i in range(number_of_points)]
+    end = time.time()
+    # print(end-start)
+    return Curve(assembly_curve)
+
+
+def return_prototype3():
+    config = dict()
+
+    config["gear1_init_parameters"] = {"radius": 6}
+    config["stick1_init_parameters"] = {"length": 18}
+    config["gear2_init_parameters"] = {"radius": 3}
+    config["stick2_init_parameters"] = {"length": 12}
+
+    config["gear1_fixed_position"] = np.array([0, 0, 0], dtype=float)
+    config["gear2_fixed_position"] = np.array([12, 0, 0], dtype=float)
+
+    config["gear1_fixed_orientation"] = np.array([0, 0, 0.5 * np.pi], dtype=float)
+    config["gear2_fixed_orientation"] = np.array([0, 0, 0.5 * np.pi], dtype=float)
+
+    config["gear1_stick1_joint_location"] = np.array([0, 5, 0], dtype=float)
+    config["stick1_gear1_joint_location"] = np.array([0, 0, 0], dtype=float)
+    config["gear2_stick2_joint_location"] = np.array([0, 2.5, 0], dtype=float)
+    config["stick2_gear2_joint_location"] = np.array([0, 0, 0], dtype=float)
+
+    config["stick1_stick2_joint_location"] = np.array([12, 0, 0], dtype=float)
+    config["stick2_stick1_joint_location"] = np.array([config["stick2_init_parameters"]["length"], 0, 0], dtype=float)
+
+    return AssemblyA(config)
+
+
+def return_prototype2():
+    config = dict()
+
+    config["gear1_init_parameters"] = {"radius": 4}
+    config["stick1_init_parameters"] = {"length": 16}
+    config["gear2_init_parameters"] = {"radius": 2}
+    config["stick2_init_parameters"] = {"length": 9}
+
+    config["gear1_fixed_position"] = np.array([0, 0, 0], dtype=float)
+    config["gear2_fixed_position"] = np.array([11, 0, 0], dtype=float)
+
+    config["gear1_fixed_orientation"] = np.array([0, 0, 0.5 * np.pi], dtype=float)
+    config["gear2_fixed_orientation"] = np.array([0, 0, 0.5 * np.pi], dtype=float)
+
+    config["gear1_stick1_joint_location"] = np.array([4, 0, 0], dtype=float)
+    config["stick1_gear1_joint_location"] = np.array([0, 0, 0], dtype=float)
+    config["gear2_stick2_joint_location"] = np.array([0, 0.5, 0], dtype=float)
+    config["stick2_gear2_joint_location"] = np.array([0, 0, 0], dtype=float)
+
+    config["stick1_stick2_joint_location"] = np.array([10.5, 0, 0], dtype=float)
+    config["stick2_stick1_joint_location"] = np.array([config["stick2_init_parameters"]["length"], 0, 0], dtype=float)
+
+    return AssemblyA(config)
+
+
+def return_prototype():
+    config = dict()
+
+    config["gear1_init_parameters"] = {"radius": 5}
+    config["stick1_init_parameters"] = {"length": 14}
+    config["gear2_init_parameters"] = {"radius": 2}
+    config["stick2_init_parameters"] = {"length": 8}
+
+    config["gear1_fixed_position"] = np.array([0, 0, 0], dtype=float)
+    config["gear2_fixed_position"] = np.array([10, 0, 0], dtype=float)
+
+    config["gear1_fixed_orientation"] = np.array([0, 0, 0.5 * np.pi], dtype=float)
+    config["gear2_fixed_orientation"] = np.array([0, 0, 0.5 * np.pi], dtype=float)
+
+    config["gear1_stick1_joint_location"] = np.array([4, 0, 0], dtype=float)
+    config["stick1_gear1_joint_location"] = np.array([0, 0, 0], dtype=float)
+    config["gear2_stick2_joint_location"] = np.array([1, 0, 0], dtype=float)
+    config["stick2_gear2_joint_location"] = np.array([0, 0, 0], dtype=float)
+
+    config["stick1_stick2_joint_location"] = np.array([12, 0, 0], dtype=float)
+    config["stick2_stick1_joint_location"] = np.array([config["stick2_init_parameters"]["length"], 0, 0], dtype=float)
+
+    return AssemblyA(config)
+
+
+def create_assemblyA(gear_diff_val=1, stick_diff_val=1, position_diff_val=1, second_type=False):
+    new_assembly = sample_from_cur_assemblyA(return_prototype3() if second_type else return_prototype2(),
+                                             gear_diff_val=gear_diff_val,
+                                             stick_diff_val=stick_diff_val, position_diff_val=position_diff_val,
+                                             random_sample=0.8, second_type=second_type)
+    while not is_vaild_assembleA(new_assembly):
+        new_assembly = sample_from_cur_assemblyA(return_prototype3() if second_type else return_prototype2(),
+                                                 gear_diff_val=gear_diff_val,
+                                                 stick_diff_val=stick_diff_val, position_diff_val=position_diff_val,
+                                                 random_sample=0.8, second_type=second_type)
+    return new_assembly
+
+
+def create_random_assembly_A(gear_diff_val=1, stick_diff_val=1, position_diff_val=1):
+    new_assembly = sample_from_cur_assemblyA(return_prototype2(), gear_diff_val=gear_diff_val,
+                                             stick_diff_val=stick_diff_val, position_diff_val=position_diff_val,
+                                             random_sample=0.8)
+    while not is_vaild_assembleA(new_assembly):
+        # print("not valid assembly")
+        new_assembly = sample_from_cur_assemblyA(return_prototype2(), gear_diff_val=gear_diff_val,
+                                                 stick_diff_val=stick_diff_val, position_diff_val=position_diff_val,
+                                                 random_sample=0.8)
+    return new_assembly
+
+
+def normalize_curve(curve, anchor):
+    return [list(sample - anchor) for sample in curve]
+
+
+def normalize_curve2(curve_points):
+    x_com = np.mean(curve_points, axis=0)
+    centered = curve_points - x_com
+    pca = PCA(n_components=2)
+    pca.fit(centered)
+    projected_points = pca.transform(centered)
+    l_max = np.max(np.abs(projected_points))
+    zeros = np.zeros((len(projected_points), 1), dtype=np.float64)
+    return np.concatenate([projected_points, zeros], axis=1) / l_max
+
+
+def plot_circle(ax, x, y, r):
+    theta = np.linspace(0, 2 * np.pi, 100)
+
+    x1 = r * np.cos(theta) + x
+    x2 = r * np.sin(theta) + y
+
+    ax.plot(x1, x2)
+    ax.set_aspect(1)
