@@ -1,10 +1,13 @@
 import numpy as np
 import numpy.linalg as alg
+from shapely.geometry import Polygon
+
 import poly_point_isect
 from sklearn.decomposition import PCA
 from matplotlib import pyplot as plt
 from numpy import random
 import json
+import dill
 import matplotlib.pyplot as plt
 
 class Curve:
@@ -24,11 +27,18 @@ class Curve:
         self._calculate_features()
         self._calculate_curvature()
 
-    # def plot_curve(self):
-    #     curve = Polygon(self.points)
-    #     x, y = curve.exterior.xy
-    #     plt.plot(x, y)
-    #     plt.show()
+    def plot_curve(self, custom_fig=None):
+        fig, ax = custom_fig
+        curve = Polygon(self.points)
+        x, y = curve.exterior.xy
+        ax.plot(x, y)
+        return (fig, ax)
+
+    def load_db(self, path):
+        with open(path, 'rb') as f:
+            db_sampler = dill.load(f)
+
+
 
     def _calculate_features(self):
         n = len(self.points)

@@ -89,7 +89,7 @@ class Assembly:
         ax.set_aspect('equal')
         # fig.show()
         if plot_path and save_images:
-            plt.savefig(plot_path + fr"\image_{image_number}")
+            plt.savefig(plot_path + fr"{image_number}")
 
     def get_assembly_constraint(self):
         """
@@ -767,9 +767,11 @@ class AssemblyA_Sampler:
         with open(path + rf"\sampler", "wb") as handle:
             pickle.dump(self, handle)
 
-    def load(self, path=r"C:\Users\A\Desktop\temp"):
-        with open(path + rf"\sampler", "wb") as handle:
-            pickle.dump(self, handle)
+    @staticmethod
+    def load(path=r"C:\Users\A\Desktop\temp"):
+        with open(path, "rb") as handle:
+            sampler = pickle.load(handle)
+        return sampler
 
 
 def normalize_curve(curve, anchor):
@@ -985,10 +987,10 @@ class StickSnake(Assembly):
                                                                         Alignment(0, 0, 0))]
         return combined_asm
 
-origin_assembly = create_assemblyA()
-print(is_vaild_assembleA(origin_assembly,debug_mode=True))
-curve = get_assembly_curve(origin_assembly,plot_path=r"C:\Users\A\Desktop\temp",number_of_points=72,normelaize_curve=False,save_images=True)
-curve.plot(save_image=True)
+# origin_assembly = create_assemblyA()
+# print(is_vaild_assembleA(origin_assembly,debug_mode=True))
+# curve = get_assembly_curve(origin_assembly,plot_path=r"C:\Users\A\Desktop\temp",number_of_points=72,normelaize_curve=False,save_images=True)
+# curve.plot(save_image=True)
 
 # database, curve_database = create_assemblyA_database(2,2)
 #
