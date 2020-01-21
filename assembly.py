@@ -6,6 +6,7 @@ from scipy.optimize import minimize
 from matplotlib import pyplot as plt
 import dill as pickle
 from sklearn.decomposition import PCA
+from tqdm import tqdm
 # import pickle
 
 import random
@@ -26,7 +27,8 @@ def describe_comp(comp):
 class Assembly:
     id_counter = 0
 
-    def __init__(self, connection_list, components, actuator=None, iters=100, tol=1e-4, plot_newt=False):
+    def __init__(self, connection_list, components, actuator=None, iters=100, tol=1e-4, plot_newt=False,
+                 red_point_component=None):
         self.components = components
         self.con_list = connection_list
         self.iterations = iters
@@ -38,6 +40,7 @@ class Assembly:
         self.const_deriv = self.get_assembly_constraints_deriv2()
         self.cur_state = self.free_params_in_assembly()
         self.plot_newt = plot_newt
+        self.red_point_component = red_point_component
 
         # make sure the assembly is valid
         # if not self.update_state():
@@ -57,13 +60,17 @@ class Assembly:
                         actuator=other_asm.actuator or self.actuator,
                         iters=self.iterations,
                         tol=self.tolerance,
-                        plot_newt=self.plot_newt)
+                        plot_newt=self.plot_newt,
+                        red_point_component=other_asm.red_point_component or self.red_point_component)
 
     def describe_assembly(self):
         return [describe_comp(c) for c in self.components]
 
-    def plot_assembly(self, plot_path=None, image_number=None, save_images=False, user_fig=None):
-        fig, ax = plt.subplots()
+    def plot_assembly(self, plot_path=None, image_number=None, save_images=False, user_fig=None, fig_tup=None):
+        if fig_tup is None:
+            fig, ax = plt.subplots()
+        else:
+            fig, ax = fig_tup
         for comp in self.components:
             if isinstance(comp, Stick):
                 clr = 'r'
@@ -90,6 +97,7 @@ class Assembly:
         # fig.show()
         if plot_path and save_images:
             plt.savefig(plot_path + fr"{image_number}")
+        return (fig, ax)
 
     def get_assembly_constraint(self):
         """
@@ -312,12 +320,11 @@ class Assembly:
     def get_cur_state_array(self):
         return np.array([self.cur_state[k] for k in self.param_index])
 
-    @abstractmethod
-    def get_red_point(self):
+    def get_red_point_position(self):
         """
         :return: 3-dim position of the assembly red point in global axis
         """
-        pass
+        return self.red_point_component.get_global_position(np.array([self.red_point_component.length, 0, 0]))
 
     def update_comp(self, comp):
         i = comp.id
@@ -342,12 +349,12 @@ def sample_radius_from_current(radius, diff_val=2, min_radius=0.1):
     return round(max(min_radius, radius + random.uniform(-diff_val, diff_val)), 2)
 
 
-def sample_gear_parameters_from_current(gear_param, diff_val=2,second_gear = False, gear1_radius = 0.0):
+def sample_gear_parameters_from_current(gear_param, diff_val=2, second_gear=False, gear1_radius=0.0):
     if second_gear:
-        assert gear1_radius>0
-        power = random.choice([-1,0,1])
-        num =random.choice([2,3])
-        gear_param["radius"] = gear1_radius*(num**power)
+        assert gear1_radius > 0
+        power = random.choice([-1, 0, 1])
+        num = random.choice([2, 3])
+        gear_param["radius"] = gear1_radius * (num ** power)
     else:
         gear_param["radius"] = round(sample_radius_from_current(gear_param["radius"], diff_val=diff_val), 2)
     return gear_param
@@ -400,8 +407,9 @@ def sample_from_cur_assemblyA(assemblyA, gear_diff_val=0.5, stick_diff_val=0.5, 
                                                                               gear_diff_val)
     if random.random() < random_sample:
         config["gear2_init_parameters"] = sample_gear_parameters_from_current(config["gear2_init_parameters"],
-                                                                              gear_diff_val,second_gear = True,\
-                                                                              gear1_radius = config["gear1_init_parameters"]["radius"])
+                                                                              gear_diff_val, second_gear=True, \
+                                                                              gear1_radius=
+                                                                              config["gear1_init_parameters"]["radius"])
     if random.random() < random_sample:
         config["stick1_init_parameters"] = sample_stick_parameters_from_current(config["stick1_init_parameters"],
                                                                                 stick_diff_val)
@@ -460,7 +468,6 @@ def points_distance(point1, point2):
 def is_vaild_assembleA(assemblyA, debug_mode=False):
     config = assemblyA.config
 
-
     if config["stick1_init_parameters"]["length"] < config["stick1_stick2_joint_location"][0]:
         if debug_mode:
             print(
@@ -517,16 +524,17 @@ def is_vaild_assembleA(assemblyA, debug_mode=False):
     return True
 
 
-def get_assembly_curve(assembly, number_of_points=360, plot_path=None, save_images=False, normelaize_curve=False):
+def get_assembly_curve(assembly, number_of_points=360, plot_path=None, save_images=False, normelaize_curve=False,
+                       user_fig=None):
     assembly_curve = []
     actuator = assembly.actuator
-    for i in range(number_of_points):
+    for i in tqdm(range(number_of_points)):
         actuator.turn(360 / number_of_points)
         result = assembly.update_state2()
         if result:
             assembly_curve.append(assembly.get_red_point_position())
             if plot_path:
-                assembly.plot_assembly(plot_path=plot_path, image_number=i, save_images=save_images)
+                assembly.plot_assembly(plot_path=plot_path, image_number=i, save_images=save_images, user_fig=None)
     return Curve(normalize_curve2(assembly_curve, assembly.anchor) if normelaize_curve else assembly_curve)
 
 
@@ -559,6 +567,7 @@ def is_dissimilar(curve, database, gamma=1):
         if Curve.normA(curve, database_curve) < gamma:
             return False
     return True
+
 
 def return_prototype2():
     config = dict()
@@ -745,23 +754,23 @@ class AssemblyA_Sampler:
     def get_curve_database(self):
         return self.curve_database
 
-    def get_closest_curve(self, curve, get_all_dis = False):
+    def get_closest_curve(self, curve, get_all_dis=False):
 
         min_dis = curve.normA(curve, self.curve_database[0])
         min_curve = self.curve_database[0]
         closest_assembly = self.database[0]
         if get_all_dis:
             all_dist = {}
-        for i,db_curve in enumerate(self.curve_database[1:]):
+        for i, db_curve in enumerate(self.curve_database[1:]):
             cur_dis = curve.normA(curve, db_curve)
             if get_all_dis:
                 all_dist[db_curve] = cur_dis
             if cur_dis < min_dis:
-                closest_assembly = self.database[i+1]
+                closest_assembly = self.database[i + 1]
                 min_dis = cur_dis
                 min_curve = db_curve
         # return min_curve.to_json(s)
-        return min_curve,closest_assembly,all_dist if get_all_dis else None
+        return min_curve, closest_assembly, all_dist if get_all_dis else None
 
     def save(self, path=r"C:\Users\A\Desktop\temp"):
         with open(path + rf"\sampler", "wb") as handle:
@@ -778,7 +787,6 @@ def normalize_curve(curve, anchor):
     return ([list(sample - anchor) for sample in curve])
 
 
-
 def normalize_curve2(curve_points):
     x_com = np.mean(curve_points, axis=0)
     centered = curve_points - x_com
@@ -787,9 +795,10 @@ def normalize_curve2(curve_points):
     v_max = pca.components_[0]
     l_max = pca.explained_variance_[0]
     projected_points = pca.transform(centered)
-    zeros = np.zeros((len(projected_points),1),dtype=np.float64)
-    np.concatenate([projected_points,zeros],axis=1)
-    return np.concatenate([projected_points,zeros],axis=1)/l_max
+    zeros = np.zeros((len(projected_points), 1), dtype=np.float64)
+    np.concatenate([projected_points, zeros], axis=1)
+    return np.concatenate([projected_points, zeros], axis=1) / l_max
+
 
 def plot_circle(ax, x, y, r):
     theta = np.linspace(0, 2 * np.pi, 100)
@@ -855,12 +864,6 @@ class AssemblyA(Assembly):
         for connection in self.connections:
             C += connection.get_constraint()
         return C
-
-    def get_red_point_position(self):
-        """
-        :return: 3-dim position of the assembly red point in global axis
-        """
-        return self.red_point_component.get_global_position(np.array([self.red_point_component.length, 0, 0]))
 
     def translate_assembly(self, point):
         for con in self.con_list:

@@ -28,17 +28,14 @@ class Curve:
         self._calculate_curvature()
 
     def plot_curve(self, custom_fig=None):
-        fig, ax = custom_fig
+        if custom_fig is not None:
+            fig, ax = custom_fig
+        else:
+            fig, ax = plt.subplots()
         curve = Polygon(self.points)
         x, y = curve.exterior.xy
         ax.plot(x, y)
         return (fig, ax)
-
-    def load_db(self, path):
-        with open(path, 'rb') as f:
-            db_sampler = dill.load(f)
-
-
 
     def _calculate_features(self):
         n = len(self.points)
