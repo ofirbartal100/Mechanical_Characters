@@ -149,6 +149,8 @@ class AssemblyA_Sampler:
             with open(pjoin('unnormalized_curves', f'{idx}'), 'rb') as f:
                 curve = dill.load(f)
 
+        if not os.path.exists('images'):
+            os.mkdir('images')
         if not os.path.exists(pjoin('images', f'{idx}')):
             os.mkdir(pjoin('images', f'{idx}'))
 

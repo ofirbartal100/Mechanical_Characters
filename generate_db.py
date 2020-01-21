@@ -10,7 +10,7 @@ parser.add_argument('n', metavar='n', type=int,
 parser.add_argument('--file_path', metavar='p', type=str, default=pjoin("dbs", "new_db"),
                     help='sampler destination path')
 parser.add_argument('--load_db', metavar='l', type=bool, default=False,
-                    help='load curent sampler from specified path')
+                    help='load current sampler from specified path, new samples will be added to it')
 parser.add_argument('--debug_mode', metavar='d', type=bool, default=False,
                     help='debug mode')
 
