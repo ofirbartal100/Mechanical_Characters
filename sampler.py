@@ -138,7 +138,7 @@ class AssemblyA_Sampler:
         else:
             combined = driving_mech
 
-        if not os.path.exists(pjoin('temps', f'funnormalized_curve_{idx}')):
+        if not os.path.exists(pjoin('temps', f'unnormalized_curve_{idx}')):
             print("generating unnormalized curve")
             curve = get_assembly_curve(combined)
             if not os.path.exists('temps'):
