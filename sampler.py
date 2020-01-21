@@ -138,15 +138,15 @@ class AssemblyA_Sampler:
         else:
             combined = driving_mech
 
-        if not os.path.exists(pjoin('temps', f'unnormalized_curve_{idx}')):
+        if not os.path.exists(pjoin('unnormalized_curves', f'{idx}')):
             print("generating unnormalized curve")
             curve = get_assembly_curve(combined)
-            if not os.path.exists('temps'):
-                os.mkdir('temps')
-            with open(pjoin('temps', f'unnormalized_curve_{idx}'), 'wb') as f:
+            if not os.path.exists('unnormalized_curves'):
+                os.mkdir('unnormalized_curves')
+            with open(pjoin('unnormalized_curves', f'{idx}'), 'wb') as f:
                 dill.dump(curve, f)
         else:
-            with open(pjoin('temps', f'unnormalized_curve_{idx}'), 'rb') as f:
+            with open(pjoin('unnormalized_curves', f'{idx}'), 'rb') as f:
                 curve = dill.load(f)
 
         if not os.path.exists(pjoin('images', f'{idx}')):
