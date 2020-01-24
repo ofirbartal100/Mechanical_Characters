@@ -1,0 +1,9 @@
+scipy==1.4.1
+numpy==1.16.2
+Shapely==1.6.4.post2
+matplotlib==3.0.3
+dill==0.3.1.1
+tqdm==4.31.1
+gmpy2==2.0.8
+Pillow==7.0.0
+scikit_learn==0.22.1
