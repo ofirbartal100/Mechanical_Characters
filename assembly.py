@@ -714,26 +714,15 @@ def get_assembly_curve(assembly, number_of_points=360, plot_path=None, save_imag
 
 
 def get_assembly_curve_parallel(assembly, number_of_points=360):
-    import multiprocessing
-    from joblib import Parallel, delayed
-    num_cores = multiprocessing.cpu_count()
-    import time
 
     def f(i, orig):
-        # cpy = AssemblyA(orig.config)
         orig.actuator.set(i * (360.0 / number_of_points))
         result = orig.update_state2()
         if result:
             return orig.get_red_point_position()
         return [0, 0, i * (360.0 / number_of_points)]
 
-    # print("started")
-    start = time.time()
-    # x0 = assembly.update_state3()
-    # assembly_curve = Parallel(n_jobs=num_cores)(delayed(f)(i, assembly) for i in range(number_of_points))
     assembly_curve = [f(i, assembly) for i in range(number_of_points)]
-    end = time.time()
-    # print(end-start)
     return Curve(assembly_curve)
 
 
