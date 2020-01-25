@@ -1,8 +1,8 @@
-from assembly import *
-from PIL import Image
 import os
 import dill
+from PIL import Image
 from os.path import join as pjoin
+from assembly import *
 
 
 class AssemblyA_Sampler:

@@ -1,9 +1,7 @@
-from sampler import *
 import argparse
 from sampler import *
 
 parser = argparse.ArgumentParser()
-
 
 parser.add_argument('db_path', metavar='db', type=str,
                     help='sampler (db) destination path')
@@ -14,7 +12,6 @@ parser.add_argument('--curve_idx', metavar='i', type=int,
 
 
 def main(db_path, curve_idx=None):
-    # db_sampler = AssemblyA_Sampler.load(destination_path=db_path)
     with open(db_path, 'rb') as input_file:
         db_sampler = dill.load(input_file)
     if curve_idx is None:

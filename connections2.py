@@ -1,9 +1,7 @@
-from abc import ABC, abstractmethod
-import numpy as np
-
+from abc import abstractmethod
+from scipy.spatial.transform import Rotation as R
 from component import *
 from configuration import *
-from scipy.spatial.transform import Rotation as R
 
 
 class Connection2(ABC):
@@ -150,7 +148,6 @@ class PinConnection2(Connection2):
             dob1 = (r1x @ r1dob1 @ r1z) @ self.joint2
             doc1 = (r1doc1 @ r1yz) @ self.joint2
 
-
             # V derivatives
             Vdoa0 = (r0xy @ r0doa0) @ self.rotation_axis1
             Vdob0 = (r0x @ r0dob0 @ r0z) @ self.rotation_axis1
@@ -159,7 +156,6 @@ class PinConnection2(Connection2):
             Vdoa1 = (r1xy @ r1doa1) @ self.rotation_axis2
             Vdob1 = (r1x @ r1dob1 @ r1z) @ self.rotation_axis2
             Vdoc1 = (r1doc1 @ r1yz) @ self.rotation_axis2
-
 
             deriv = np.zeros((6, 12))
             deriv[0, :] = np.array([1, 0, 0, doc0[0], dob0[0], doa0[0],

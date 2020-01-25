@@ -1,4 +1,3 @@
-from assembly import *
 from sampler import AssemblyA_Sampler
 import argparse
 from os.path import join as pjoin

@@ -18,6 +18,7 @@ class Point:
     def __str__(self):
         return str(self.vector())
 
+
 class Alignment:
     """
     represent a global 3d euler angles in degrees alignment
@@ -44,6 +45,7 @@ class Alignment:
 
     def __str__(self):
         return str(self.vector())
+
 
 class Configuration:
     def __init__(self, position, alignment):

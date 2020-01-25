@@ -1,7 +1,6 @@
 import json
 import argparse
 import dill
-
 from curve import Curve
 
 
