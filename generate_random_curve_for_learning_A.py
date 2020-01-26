@@ -1,6 +1,6 @@
 from assembly import *
 from curve import Curve
-
+import argparse
 
 def normalize_curve(curve, anchor):
     return ([list(sample - anchor) for sample in curve.points])
@@ -18,5 +18,9 @@ def generate_random_curve(number_of_points=360, gear_diff_val=1, stick_diff_val=
     print(c.to_json())
 
 
+parser = argparse.ArgumentParser(
+    description='Generates a random curve')
 if __name__ == "__main__":
+    # arguments parser
+    args = parser.parse_args()
     generate_random_curve(number_of_points=76, gear_diff_val=1, stick_diff_val=2, position_diff_val=1)
