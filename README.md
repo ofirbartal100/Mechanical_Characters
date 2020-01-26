@@ -8,6 +8,8 @@ This project has 2 more projects associated with it that presents a UI for the p
 # Usage
 To generate a DB of curves run:
 
+python3 generate_db n <desired database size> --load_db <sampler destination path> --load_db <path to current database> --debug_mode <enable debug mode> 
+
 To plot an assembly and its tracing curve run:
 
 # Dependancies
