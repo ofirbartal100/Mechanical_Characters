@@ -9,12 +9,12 @@ This project has 2 more projects associated with it that presents a UI for the p
 ### To generate a DB of curves run:
 
 ```
-python3 generate_db n < desired database size > --file_path < sampler destination path > --load_db < path to current database > --debug_mode < enable debug mode > 
+python3 generate_db.py n < desired database size > --file_path < sampler destination path > --load_db < path to current database > --debug_mode < enable debug mode > 
 ```
 
 For example
 ```
-python3 generate_db 200 --file_path "C:\Users\a\Desktop\sampler_new" --load_db "C:\Users\a\Desktop\sampler_old"  --debug_mode True 
+python3 generate_db.py 200 --file_path "C:\Users\a\Desktop\sampler_new" --load_db "C:\Users\a\Desktop\sampler_old"  --debug_mode True 
 ```
 The arguments are:  
 n - number of samples that will add to the database.  
@@ -24,8 +24,11 @@ debug_mode - change it to True will print progress notifications while the file 
 
 ### To plot an assembly and its tracing curve run:
 ```
-[None]
+python3 db_plotting.py path/to/database/object --curve_idx <index of curve to plot from db>
 ```
+the ```--curve_idx``` parameter is optional, leaving it out will plot all the curves in the db to a folder named db_plots
+when using ```--curve_idx``` the script outputs an animated GIF file to a folder named gifs.
+
 # Dependancies
 Some of the dependencies are installable via pip, and some via conda..
 
